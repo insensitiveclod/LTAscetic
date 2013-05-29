@@ -3,7 +3,7 @@
 //#include "hal.h"
 //#include <inttypes.h>
 //#include <avr/pgmspace.h>
-#include <util/delay.h>    // Дает возможность формирования задержки
+#include <util/delay.h>    // Supplies delay-routines
 
 #define Q0 (1<<0)
 #define Q1 (1<<1)
@@ -14,7 +14,7 @@
 #define Q6 (1<<6)
 #define Q7 (1<<7)
 
-//здесь определяем, на каких выводах сдвигового регистра сидять выводы LCD-дисплея
+//Here we define which output-lines of the shift-register are connected to which inputs on the LC-Display
 
 /*
 
@@ -37,17 +37,17 @@
 #define lcd_update() shift_register_set_data(lcd_buffer)
 
 
-#define bl_high lcd_buffer|=BL //выставляем бит BL (подсветка) в буфере
-#define bl_low lcd_buffer&=~BL //сбрасываем бит BL в буфере
+#define bl_high lcd_buffer|=BL				// set a 'backlight' bit in the buffer
+#define bl_low lcd_buffer&=~BL				// reset a 'backlight' bit in the buffer
 
-#define lcd_bl_high() bl_high;lcd_update()  //выставляем бит BL непосредственно на сдвиговом регистре
-#define lcd_bl_low() bl_low;lcd_update() //сбрасываем бит BL непосредственно на сдвиговом регистре
+#define lcd_bl_high() bl_high;lcd_update()		// Directly set a backlight-bit and update LCD
+#define lcd_bl_low() bl_low;lcd_update()		// Directly reset a backlight-bit and update LCD
 
-#define rs_high lcd_buffer|=RS //выставляем бит RS в буфере
-#define rs_low lcd_buffer&=~RS //сбрасываем бит RS в буфере
+#define rs_high lcd_buffer|=RS				// set a 'RS' bit in the buffer
+#define rs_low lcd_buffer&=~RS				// reset a 'RS' bit in the buffer
 
-#define lcd_rs_high() rs_high;lcd_update() //выставляем бит RS непосредственно на сдвиговом регистре
-#define lcd_rs_low() rs_low;lcd_update() //сбрасываем бит RS непосредственно на сдвиговом регистре
+#define lcd_rs_high() rs_high;lcd_update()		// directly set 'RS' bit and update LCD
+#define lcd_rs_low() rs_low;lcd_update()		// directly reset 'RS' bit and update LCD
 
 
 #define e_high lcd_buffer|=E
@@ -192,7 +192,7 @@
 
 
 uint8_t lcd_buffer;
-static volatile uint8_t pos; //текущая позиция курсора
+static volatile uint8_t pos; //current cursor position
 const unsigned char Decode2Rus[255-192+1] PROGMEM = {
 0x41,0xA0,0x42,0xA1,0xE0,0x45,0xA3,0xA4, 
 0xA5,0xA6,0x4B,0xA7,0x4D,0x48,0x4F,0xA8, 
@@ -255,7 +255,7 @@ Input:    dispAttr LCD_DISP_OFF            display off
 Returns:  none
 *************************************************************************/
 void init_lcd(){
-init_shift_register(); //настраеваем порт для работы со сдвиговым
+init_shift_register(); //port for customized events with shear (FIXME: shift ?.. needs better comment)
 shift_register_clean();
 /*
 lcd_d4_high();
@@ -285,25 +285,25 @@ lcd_function_set(LCD_FUNCTION_4BIT);
 
 lcd_command(LCD_CMD_FUNCTION|LCD_FUNCTION_DEFAULT);
 
-//выключаем дисплей
+//Turn off the display
 
 lcd_command(1<<LCD_ON);
 
-//очищаем дисплей
+//Clear the display
 lcd_command(LCD_CLR);
 
-//Enrty mode set
+//Entry mode set
 lcd_command(LCD_ENTRY_MODE);
 
-//включаем дисплей 
+//Turn on the display
 //lcd_command(LCD_ON|LCD_ON_DISPLAY);
 
 //--//lcd_command(LCD_ON|LCD_DISP_ON_BLINK);
 
 
-lcd_command(LCD_DISP_ON);//включаем дисплей, курсор выключен
+lcd_command(LCD_DISP_ON);//turn on display, disable cursor
 
-//ставим курсор на начало
+//move cursor to the beginning
 lcd_command(LCD_ENTRY_MODE|LCD_ENTRY_INC);
 
 lcd_generate_batt_symbols();
@@ -324,7 +324,7 @@ static void lcd_write(uint8_t data,uint8_t rs)
 {
     unsigned char dataBits ;
 
-//	lcd_buffer=0; //очищаем буффер
+//	lcd_buffer=0; //clear the buffer
     if (rs) {   /* write data        (RS=1, RW=0) */
        rs_high;
     } else {    /* write instruction (RS=0, RW=0) */
@@ -333,7 +333,7 @@ static void lcd_write(uint8_t data,uint8_t rs)
    // lcd_rw_low();
 
     
-	//сначала выведем старший полубайт
+	//First construct the high nibble
 	if(data & 0x80) data_3_high;
     else data_3_low;
 	if(data & 0x40) data_2_high;
@@ -342,12 +342,12 @@ static void lcd_write(uint8_t data,uint8_t rs)
 	else data_1_low;
     if(data & 0x10) data_0_high;
  	else data_0_low;
-	lcd_update(); //выдвигаем данные из буфера в регистр   
-    lcd_e_toggle();//говорим дисплею, что данные готовы
-	_delay_ms(2);//-----// 
+	lcd_update(); 	//push data from buffer into shift-register   
+    lcd_e_toggle();	//Tell LCD that data is set ready
+	_delay_ms(2);	//-----// 
 	
-//	lcd_buffer=0; //очищаем буффер
-	//теперь выведем младший полубайт
+//	lcd_buffer=0; //clear buffer
+	//Now construct the lower nibble
 
 	if(data & 0x08) data_3_high;
 	else data_3_low;
@@ -357,9 +357,9 @@ static void lcd_write(uint8_t data,uint8_t rs)
 	else data_1_low;
     if(data & 0x01) data_0_high;
     else data_0_low;
-	lcd_update(); //выдвигаем данные из буфера в регистр   
-	lcd_e_toggle(); //говорим дисплею, что данные готовы       
-	_delay_ms(2);//---// 
+	lcd_update(); 	//push data from buffer into shift-register
+	lcd_e_toggle(); //tell LCD that data is set ready    
+	_delay_ms(2);	//---// 
 	
 
 	 /* all data pins high (inactive) */
@@ -367,7 +367,7 @@ static void lcd_write(uint8_t data,uint8_t rs)
 //    data_2_high;
 //    data_1_high;
 //    data_0_high;
-//	lcd_update(); //выдвигаем данные из буфера в регистр   
+//	lcd_update(); //push data from buffer into shift-register
 	
 	
 }
@@ -453,7 +453,7 @@ void lcd_putc(char c)
 //        lcd_waitbusy();
 #endif
         
-		if(c>=192) c = pgm_read_byte(&(Decode2Rus[c-192]));
+		if(c>=192) c = pgm_read_byte(&(Decode2Rus[c-192])); //FIXME: required for russian ? Depends on LCD-charmap, right ?
 		lcd_write(c, 1);
 		pos++;
     }
@@ -638,12 +638,12 @@ lcd_bl_low();
 
 
 /*****************************************
-*создаем в памяти ЖКИ символы батарейки
+*СЃРѕР·РґР°РµРј РІ РїР°РјСЏС‚Рё Р–РљР СЃРёРјРІРѕР»С‹ Р±Р°С‚Р°СЂРµР№РєРё
 *****************************************/
 
 void lcd_generate_batt_symbols(void)
 {
-lcd_command(1<<LCD_CGRAM|0); //устанавливаем адрес CGRAM=0 
+lcd_command(1<<LCD_CGRAM|0); //Set the address. CGRAM=0
 lcd_data(0b00001110);
 lcd_data(0b00010001);
 lcd_data(0b00010001);
@@ -698,6 +698,6 @@ lcd_data(0b00011111);
 lcd_data(0b00011111);
 lcd_data(0b00011111);
 lcd_data(0b00000000);
-lcd_command(1<<LCD_DDRAM|0); //устанавливаем адрес DDRAM=0 
+lcd_command(1<<LCD_DDRAM|0); //Set the address. DDRAM=0 
 
 }
