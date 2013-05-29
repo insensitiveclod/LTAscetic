@@ -1,8 +1,8 @@
 enum argument_error {
-ok,						//аргумент имеет корректное значение
-invalid,				//недопустимый аргумент   
-out_of_range, 			//аргумент выходит за пределы корректных значений
-empty					//аргумент пустой
+ok,					//argument is a valid value
+invalid,				//invalid argument
+out_of_range, 				//argument is outside the valid values
+empty					//argument is null
 };
 typedef enum argument_error TARGUMENT_ERROR;
 
@@ -123,15 +123,15 @@ const unsigned char ok_string[] PROGMEM = "\r\nOK\r\n";
 #define MAX_BULL_IN_CLIP_STR '90'
 
 const unsigned char protocol[] PROGMEM = 	//"bullets_in_clip;int(0,90);bullets_in_clip?;bullets_in_clip=\r\n"
-											"Количество патронов в магазине;int(0,90);bullets_in_clip?;bullets_in_clip=\r\n"
-											"Магазинов;int(0,100);clips?;clips=\r\n"
-											"Идентификатор игрока;int(0,127);player_id?;player_id=\r\n"
-											"Цвет команды;enum(Красная,Синяя,Желтая,Зеленая);team_id?;team_id=\r\n"
-											"Наносимый урон;enum(1%,2%,4%,5%,7%,10%,15%,17%,20%,25%,30%,35%,40%,50%,75%,100%);damage_index?;damage_index=\r\n"
-											"Дружественный огонь;enum(Нет,Да);friendly_fire?;friendly_fire=\r\n"
-											"Мощность ИК излучения;enum(Для игры в помещении,Для игры на улице);ir_power?;ir_power=\r\n"
-											"Напряжение заряж. батареи мВ;int(5000,45000);batt_full_voltage?;batt_full_voltage=\r\n"
-											"Напряжение разряж. батареи мВ;int(4500,45000);batt_low_voltage?;batt_low_voltage=\r\n";
+											"Bullets left in clip;int(0,90);bullets_in_clip?;bullets_in_clip=\r\n"
+											"Clips left;int(0,100);clips?;clips=\r\n"
+											"The ID of the player;int(0,127);player_id?;player_id=\r\n"
+											"Team colour;enum(Red,Blue,Yellow,Green);team_id?;team_id=\r\n"
+											"Inflicted Damage;enum(1%,2%,4%,5%,7%,10%,15%,17%,20%,25%,30%,35%,40%,50%,75%,100%);damage_index?;damage_index=\r\n"
+											"Friendly Fire;enum(No,Yes);friendly_fire?;friendly_fire=\r\n"
+											"IR radiation strength;enum(For Indoor Play,For Outdoor Play);ir_power?;ir_power=\r\n"
+											"Batteries ok. Voltage mV;int(5000,45000);batt_full_voltage?;batt_full_voltage=\r\n"
+											"Batteries low; Voltage mVint(4500,45000);batt_low_voltage?;batt_low_voltage=\r\n";
 
 
 

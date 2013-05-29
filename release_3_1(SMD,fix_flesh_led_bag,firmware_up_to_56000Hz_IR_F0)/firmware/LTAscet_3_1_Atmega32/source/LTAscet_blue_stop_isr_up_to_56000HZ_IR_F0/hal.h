@@ -1,5 +1,5 @@
-#ifndef F_CPU						//Ётот параметр нужно задавать в свойствах проекта, если там не задан, задаем здесь
-#define F_CPU 16000000  			// “актова€ частота в √ц
+#ifndef F_CPU					// This value is normally set in makefile/projectfile....
+#define F_CPU 16000000  			// ... but we define it here if not set earlier. F_CPU is CPU freq in HZ
 #endif
 
 
@@ -45,14 +45,13 @@
 #define FQR_4HZ 0b10101010
 #define ON 0b11111111
 
-#define SHORT_DURATION 4 	//минимальна€ длительность (в "тиках") непрерывного нажати€ курка, 
-							//необходима€ дл€ фиксации событи€ "курок нажат"
+#define SHORT_DURATION 4 		// Minimum time (in 'ticks') that trigger was continuously pulled'
+					// Used for debouncing 'trigger is pressed' event
+
+#define CUT_OFF_SOUNT 10 		// ( FIXME: Length of sound in the "turn" as a percentage of the duration of the sound in the "single")
+					// ( FIXME: change "CUT_OFF_SOUNT" to "CUT_OFF_SOUND)
 
 
-#define CUT_OFF_SOUNT 10 //ƒлительность звука в режиме "очередь" в процентах от длительности звука в режиме "одиночный"
 
-
-
-#define DEFAULT_BATT_FULL_VOLTAGE 6800 //напр€жение полностью зар€женной батареи в милливольтах
-
-#define DEFAULT_BATT_LOW_VOLTAGE 5500 //напр€жение полностью разр€женной батареи в милливольтах
+#define DEFAULT_BATT_FULL_VOLTAGE 6800 	// Voltage of fully charged battery, in millivolts
+#define DEFAULT_BATT_LOW_VOLTAGE 5500 	// Voltage of fully depleted/discharged battery, in millivolts

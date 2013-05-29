@@ -42,7 +42,7 @@ result = no_pressing;
 uint8_t j_status;
 j_status = get_joystick_status();
 
-switch(j_status)  //проверяем, что нажато
+switch(j_status)  //Check joystick status
 	{
 	
 		case UP_KEY_MASK: 

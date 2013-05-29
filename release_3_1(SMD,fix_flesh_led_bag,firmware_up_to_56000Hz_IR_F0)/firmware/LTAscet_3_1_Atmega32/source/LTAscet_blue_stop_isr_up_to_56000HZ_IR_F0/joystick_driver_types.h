@@ -1,4 +1,6 @@
-#define UP_KEY_PORT PORTA //Порт, к которому подключен переключатель "DAMAGE" (урон)
+// FIXME: Not sure about the translation in this case; check hardware to see if statement makes sense
+
+#define UP_KEY_PORT PORTA //The port is connected to the switch 'DAMAGE' (done) 
 #define UP_KEY_DDR DDRA 
 #define UP_KEY_IN PINA
 #define UP_KEY_PIN (1<<3)
@@ -6,20 +8,20 @@
 
 
 
-#define RIGHT_KEY_PORT PORTA //Порт, к которому подключен переключатель "DAMAGE" (урон)
+#define RIGHT_KEY_PORT PORTA //The port is connected to the switch 'DAMAGE' (done) 
 #define RIGHT_KEY_DDR DDRA 
 #define RIGHT_KEY_IN PINA
 #define RIGHT_KEY_PIN (1<<2)
 #define RIGHT_KEY_MASK (1<<1)
 
 
-#define DOWN_KEY_PORT PORTA //Порт, к которому подключен переключатель "DAMAGE" (урон)
+#define DOWN_KEY_PORT PORTA //The port is connected to the switch 'DAMAGE' (done) 
 #define DOWN_KEY_DDR DDRA 
 #define DOWN_KEY_IN PINA
 #define DOWN_KEY_PIN (1<<5)
 #define DOWN_KEY_MASK (1<<2)
 
-#define LEFT_KEY_PORT PORTA //Порт, к которому подключен переключатель "DAMAGE" (урон)
+#define LEFT_KEY_PORT PORTA //The port is connected to the switch 'DAMAGE' (done) 
 #define LEFT_KEY_DDR DDRA 
 #define LEFT_KEY_IN PINA
 #define LEFT_KEY_PIN (1<<6)
@@ -27,7 +29,7 @@
 
 
 
-#define CENTRAL_KEY_PORT PORTA //Порт, к которому подключен переключатель "DAMAGE" (урон)
+#define CENTRAL_KEY_PORT PORTA //The port is connected to the switch 'DAMAGE' (done) 
 #define CENTRAL_KEY_DDR DDRA 
 #define CENTRAL_KEY_IN PINA
 #define CENTRAL_KEY_PIN (1<<4)
@@ -64,7 +66,7 @@ typedef enum typjoystick_status TJOYSTICK_STATUS;
 
 
 struct joystick_pressing_duration
-                 { uint16_t key_up      ; // 
+                 { uint16_t key_up      ; // FIXME: These texts dont come through iconv properly.
                                              //ia?aoey eiiiee 1
                    unsigned int key_up_inc:1; //aeo, ?ac?aoa?uee 
                                              //eee cai?aua?uee ion?ao

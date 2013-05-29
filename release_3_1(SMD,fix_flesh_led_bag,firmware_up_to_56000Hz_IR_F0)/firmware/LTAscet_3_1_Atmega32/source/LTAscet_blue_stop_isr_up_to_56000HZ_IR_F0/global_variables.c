@@ -1,10 +1,10 @@
 /**************************************************************************************
-* Глобальные переменные
+* Global Variables 
 ***************************************************************************************/
-#include <avr/io.h>        // Определяет имена для портов ввода-ывода
-#include <util/delay.h>    // Дает возможность формирования задержки
-#include <avr/interrupt.h> // Будем использовать прерывания
-#include <avr/pgmspace.h>  //Будем хранить константы в памяти программ
+#include <avr/io.h>        // Imports the names for the inputs in PORTA 
+#include <util/delay.h>    // Supplies delay-routines
+#include <avr/interrupt.h> // We will use the interrupt handling
+#include <avr/pgmspace.h>  // We define constants in program-memory
 #include <avr/eeprom.h>
 #include "types.h"
 #include "miles_protocol.h"
@@ -12,108 +12,100 @@
 volatile uint16_t timer2; 
 
 
-volatile bool start_bit_received;				//Этот флаг устанвливается, если принят старт-бит
+volatile bool start_bit_received;		//This flag is set when start-bit detected
+volatile uint16_t high_level_counter; 		//Duration counter for timing HI-level at IR-reciever pin
+										
+						//You want to transfer the following
 
-volatile uint16_t high_level_counter; 			//Счетчик длительности сигнала высокого уровня на выводе ИК-приемника										
-												//который нужно передать следующим
+volatile uint16_t bit_in_rx_buff;		//The number of bits recieved in IR-reciever RX-buffer
 
+volatile trx_event rx_event; 			//IR-reciever RX-event flag
 
-volatile uint16_t bit_in_rx_buff; 				//Количество бит, принятых ИК-приемником 
+volatile uint16_t low_level_counter; 		//Duration counter for timing LO-level at IR-reciever pin
 
-volatile trx_event rx_event; 					//события ИК-приемника
-
-volatile uint16_t low_level_counter; 			//Счетчик длительности сигнала низкого уровня на выводе ИК-приемника										
-												//который нужно передать следующим
-
-
-volatile uint8_t rx_buffer[RX_BUFFER_SIZE]; 	//Буффер ИК-приемника
-
-volatile uint8_t tx_buffer[TX_BUFFER_SIZE]; 	//Буффер ИК-приемника
+						//You want to transfer the following
 
 
-volatile bool ir_transmitter_on;	//флаг, разрешаюший (true) или запрещающий передачу данных через ИК-диод 
+volatile uint8_t rx_buffer[RX_BUFFER_SIZE]; 	//IR-reciever RX-buffer
 
-volatile uint16_t ir_pulse_counter; 					//Обратный счетчик "вспышек" ИК-диода
-
-volatile int ir_space_counter; 					//Обратный счетчик длительности выключенного состояния ИК-диода (пауза между битами) 
-
-volatile union data_packet_union  data_packet; 	//В этой переменной будем формировать пакет данных для отправки через IR
+volatile uint8_t tx_buffer[TX_BUFFER_SIZE]; 	//IR-LED TX-buffer
 
 
-volatile uint8_t cursor_position;				//Эта переменная будет хранить индех элемента массива данных data_packet.data[x]
+volatile bool ir_transmitter_on;		//when 'true', allows transfer of data via IR-LED
 
-volatile union data_packet_union  data_packet; 	//В этой переменной будем формировать пакет данных для отправки через IR
+volatile uint16_t ir_pulse_counter; 		//counter of number of pulses of the IR-LED
 
-volatile trx_packet rx_packet;
+volatile int ir_space_counter; 			//counter of number of 'spaces' of the IR-LED
 
-volatile uint8_t life; //уровень жизни (здоровье)
+volatile union data_packet_union  data_packet; 	//Contains the data to be sent via the IR-LED
 
-volatile uint8_t life_leds_status[4]; //этот массив будет хранить состояния 
 
-volatile TKEYBOARD_EVENT  keyboard_event; //события клавиатуры 
+volatile uint8_t cursor_position;		//index-variable to the location inside data_packet.data[x]
 
-volatile TKEYBOARD_EVENT  reload_key_event; //события клавиши "Перезарядить"
+volatile union data_packet_union  data_packet; 	//Contains the data to be sent via the IR-LED (FIXME: double define ?)
+volatile trx_packet rx_packet;			// FIXME: no comment ?
 
-volatile TJOYSTICK_EVENT  joystick_event; //события джойстика 
+volatile uint8_t life; 				//Life left (health)
 
-volatile struct pressing_duration key_pressing_duration;//структура хранит счетчики длительности нажатия кнопок
+volatile uint8_t life_leds_status[4]; 		//Array used to store state of life-indicator LEDs
+volatile TKEYBOARD_EVENT  keyboard_event; 	//Keyboard events
+volatile TKEYBOARD_EVENT  reload_key_event; 	//'reload' key event
+volatile TJOYSTICK_EVENT  joystick_event; 	//joystick event
+
+volatile struct pressing_duration key_pressing_duration;//Structures store key/joystick press-durations (FIXME: for debouncing ?)
 
 volatile struct joystick_pressing_duration joystick_key_pressing_duration;
 
-volatile uint8_t fire_led_status; //статус светодиода вспышки выстрела 
+volatile uint8_t fire_led_status; 		//Status of FIRE-LED (note: muzzle-flash, not IR-LED)
 
-volatile uint8_t bullets;  //количество патронов в магазине
+volatile uint8_t bullets;  			//Number of bullets left in loaded clip
 
-volatile uint16_t last_simple;					//порядковый номер последней выборки звука
+volatile uint16_t last_simple;			//index of the last used sample
+volatile bool play_hit_snd; 			//When set to 'false' this flag inhibits playing additional sounds
 
-volatile bool play_hit_snd; //этот флаг разрешает (true) или запрещает (false) воспроизведение дополнительных звуков
-
-volatile tsnd_adress snd_adress; //в этой переменной будем хранить адрес звукового массива, который нужно воспроизвести
+volatile tsnd_adress snd_adress; 		//tsnd_address contains address of array with audio to be played
 
 
-volatile EEMEM tteam_color eeprom_team_id;
-//volatile uint8_t shift_register_buffer; //в этой переменной будем хранить данные для сдвигового регистра перед отправкой
+volatile EEMEM tteam_color eeprom_team_id;	// Initializes team_id from EEPROM
+//volatile uint8_t shift_register_buffer; 	//temporary buffer for use with shift-register
 volatile EEMEM uint8_t eeprom_player_id;
 
-volatile EEMEM tgun_damage eeprom_damage;
+volatile EEMEM tgun_damage eeprom_damage;	// Initializes gun-damage from EEPROM
 
-volatile EEMEM uint8_t eeprom_bullets_in_clip; // количество патронов в обойме
+volatile EEMEM uint8_t eeprom_bullets_in_clip; 	// Initializes number of bullets in clip left from EEPROM
 
-volatile EEMEM uint8_t eeprom_clips; // количество обойм при инициализации
+volatile EEMEM uint8_t eeprom_clips; 		// Initializes number of clips left from EEPROM
 
-volatile EEMEM uint8_t eeprom_reload_duration; // длительность перезарядки (в секундах)
+volatile EEMEM uint8_t eeprom_reload_duration; 	// Initializes required time for a reload event from EEPROM
 
-volatile EEMEM uint16_t eeprom_batt_full_voltage; // напряжение полностью заряженной батареи (значение АЦП)
+volatile EEMEM uint16_t eeprom_batt_full_voltage;	// fully charged battery voltage (expressed in ADC value) from EEPROM
 
-volatile EEMEM uint16_t eeprom_batt_low_voltage; // напряжение полностью разряженной батареи (значение АЦП)
+volatile EEMEM uint16_t eeprom_batt_low_voltage;	// fully discharged battery voltage (expressed in ADC value) FROM EEPROM
 
-volatile EEMEM uint8_t eeprom_curr_ir_pin; //определяет мощность ИК излучения
+volatile EEMEM uint8_t eeprom_curr_ir_pin; 	// Initializes IR-LED transmit power from EEPROM
 
 volatile EEMEM ttm_serial_num eeprom_tm_serial_num;
 
-volatile uint8_t clips;//кол-во оставшихся обойм
+volatile uint8_t clips;				// remaining clips
+volatile life_in_percent;			// Life/health in 'percents'
 
-volatile life_in_percent;// остаток "жизни" в процетах
-
-volatile uint16_t chit_detected_counter; // счётчик длительности отключения повязки
-
-volatile bool chit_detected; // флаг, имеющий значение true, если зафиксировано отключение повязки
-
-volatile bool tm_connect; //флаг, имеющий значение true, если зафиксировано поднесение ключа тачмемори к считывателю
+volatile uint16_t chit_detected_counter; 	// FIXME: "length counter bandages off"
+volatile bool chit_detected; 			// FIXME: "flag with a value of true, if recorded off bandages"
+volatile bool tm_connect; 			// Flag set to 'true' if touch-memory device is connected to the reader
 
 
-volatile uint8_t display_bullets_update_now; //флаг, указывающий, что пора обновить индикацию оставшихся патронов
-//volatile TTM_EVENT tm_event; //события считывателя TouchMemory
+volatile uint8_t display_bullets_update_now; 	// Flag set to force updating of 'bullets left' display
+//volatile TTM_EVENT tm_event; 			//Event for touch-memory connection
 
 
 
-volatile TDISPLAY_BATT_MODE display_batt_mode; //режим отображения напряжения батареи (иконка/цифры) 
+volatile TDISPLAY_BATT_MODE display_batt_mode; 	//Display-mode of battery-charge (icons or numbers)
 
 
-volatile uint8_t curr_ir_pin; //текущая ножка, которую будем "дергать" при выстреле, определяет мощность ИК излучения
+volatile uint8_t curr_ir_pin; 			//current of IR-LED pin; will determine the power of IR-radiation from LED
 
 
-//Массив для получения реального значения урона. Реальный урон = damage_value[Damage_xx]
+//Array to get the real value of damage done. Real damage = damage_value[Damage_xx]
 uint8_t damage_value [] PROGMEM = 
 {
 	1,   // 0000 = 1   (Damage_1)
@@ -135,30 +127,30 @@ uint8_t damage_value [] PROGMEM =
 
 };
 
-volatile bool cr_received; //влаг, указывающий на то, что по UART получен символ "\r" - перевод корретки 
+volatile bool cr_received; 		//flag indicating that UART recieved CR ("\r") 
 
-volatile uint16_t uart_timer; //таймер для отсчета таймаута
-volatile bool fcurr_simple_prepared; //флаг, указывающий, что сеймпл звука подготовлен для воспроизведения
-volatile uint8_t curr_simple; //текущий сеймл звука
-volatile EEMEM uint16_t sound_1_adress;//адрес в eeprom звука выстрела
-volatile EEMEM uint16_t sound_1_size;//длина в байтах звука выстрела
-volatile EEMEM uint16_t sound_2_adress;//адрес в eeprom звука выстрела
-volatile EEMEM uint16_t sound_2_size;//длина в байтах звука выстрела
-volatile EEMEM uint16_t sound_3_adress;//адрес в eeprom звука выстрела
-volatile EEMEM uint16_t sound_3_size;//длина в байтах звука выстрела
-volatile EEMEM uint16_t sound_4_adress;//адрес в eeprom звука выстрела
-volatile EEMEM uint16_t sound_4_size;//длина в байтах звука выстрела
-volatile EEMEM uint16_t sound_5_adress;//адрес в eeprom звука выстрела
-volatile EEMEM uint16_t sound_5_size;//длина в байтах звука выстрела
-volatile EEMEM uint16_t sound_6_adress;//адрес в eeprom звука выстрела
-volatile EEMEM uint16_t sound_6_size;//длина в байтах звука выстрела
-volatile EEMEM bool friendly_fire_enable; //флаг, указывающий, фиксировать (true) или нет (false) "дружественный" огонь
+volatile uint16_t uart_timer; 		//counter for UART-timeout
+volatile bool fcurr_simple_prepared; 	//flag to indicate that current sound-sample has been prepared and is ready for playback
+volatile uint8_t curr_simple; 		//Current sound-sample
+volatile EEMEM uint16_t sound_1_adress;	//address of sound 1 in EEPROM
+volatile EEMEM uint16_t sound_1_size;	//length in bytes of sound 1 in EEPROM
+volatile EEMEM uint16_t sound_2_adress;	//address of sound 2 in EEPROM
+volatile EEMEM uint16_t sound_2_size;	//length in bytes of sound 2 in EEPROM
+volatile EEMEM uint16_t sound_3_adress;	//address of sound 3 in EEPROM
+volatile EEMEM uint16_t sound_3_size;	//length in bytes of sound 3 in EEPROM
+volatile EEMEM uint16_t sound_4_adress;	//address of sound 4 in EEPROM
+volatile EEMEM uint16_t sound_4_size;	//length in bytes of sound 4 in EEPROM
+volatile EEMEM uint16_t sound_5_adress;	//address of sound 5 in EEPROM
+volatile EEMEM uint16_t sound_5_size;	//length in bytes of sound 5 in EEPROM
+volatile EEMEM uint16_t sound_6_adress;	//address of sound 6 in EEPROM
+volatile EEMEM uint16_t sound_6_size;	//length in bytes of sound 6 in EEPROM
+volatile EEMEM bool friendly_fire_enable; 	//flag set to 'true' to allow 'friendly fire'
 
-//volatile TSOUND_BUFFER curr_sound_buffer; //текущий буфер звука
-volatile uint16_t curr_adress_in_eeprom;//адрес в eeprom, начиная с которого запишем данные в звуковой буфер
-//volatile uint8_t curr_pos_in_sound_buff;//текущая пощиция в звуковом буфере
-volatile uint16_t simples_in_queue;//сколько сеймплов осталось воспроизвести
-//volatile uint8_t update_suond_buffer_now;//флаг, указывающия, что нужно обновить данные в звуковом буфере 
-volatile bool eeprom_is_open;//флаг, указывает, открыта ли eeprom в данный момент
-volatile uint16_t cut_off_sound; //количество невоспроизведённых сеймлов, при котором пора отсекать звук
-volatile bool receiver_on;//флаг, показывающия, что идет прием ИК пакета
+//volatile TSOUND_BUFFER curr_sound_buffer; 	//current buffer sound (FIXME: UNUSED ?)
+volatile uint16_t curr_adress_in_eeprom;	//address in EEPROM from which data can be read into the sound-buffer
+//volatile uint8_t curr_pos_in_sound_buff;	//current position inside audio-buffer (FIXME: UNUSED ?)
+volatile uint16_t simples_in_queue;		//how much of sample is left in queue
+//volatile uint8_t update_suond_buffer_now;	//flag that forces updating data in audio-buffer (FIXME: UNUSED ?)
+volatile bool eeprom_is_open;			//flag set when access to EEPROM is active at the moment
+volatile uint16_t cut_off_sound; 		//number of unplayed sample-bytes at which it's time to cut off playback
+volatile bool receiver_on;			//flag set when there is input (FIXME: 'reception IC package ?)

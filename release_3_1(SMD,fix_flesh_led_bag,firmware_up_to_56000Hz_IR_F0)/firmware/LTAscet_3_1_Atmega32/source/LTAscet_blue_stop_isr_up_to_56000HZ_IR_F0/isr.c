@@ -3,7 +3,7 @@
 //#include "joystick_driver.h"
 //#include "hitraw.h"
 /**************************************************************************************
-* Обработчик прерываний таймера
+* The Timer Interrupt
 ***************************************************************************************/
 
 ISR(TIMER2_COMP_vect){
@@ -12,72 +12,72 @@ static volatile uint8_t prt;
 
 
 prt = TSOP_IN&TSOP_PIN; 
-if (prt==0) //На ножке ИК-приемника низкий уровень сигнала (пойман сигнал несущей)
+if (prt==0) //If IR-receiver pin is LOW (demodulated by TSOP)
 	{
-	//	PORTA &= ~(1 << 0); //включаем вспомогательный светодиод
-		low_level_counter++;//Увеличиваем счетчик длительности низкоуровнего сигнала на ножке ИК-приемника
+	//	PORTA &= ~(1 << 0); //Turn on auxiliary LED
+		low_level_counter++;//Increment the LOW-level counter 
 //	//	if (chit_detected_counter < (IR_ZERO*1000)) chit_detected_counter++;
 //	//	if (chit_detected_counter >= (IR_ZERO*1000)) chit_detected=true;
 
 	}
-else  //На ножке ИК-приемника высокий уровень сигнала (пойман сигнал несущей)
+else  // if IR-receiver pin is HIGH (demodulated by TSOP)
 	{
-	//	PORTA |=(1<<0);	//выключаем вспомогательный светодиод
+	//	PORTA |=(1<<0);	//Deactivate the auxiliary LED
 // //		chit_detected_counter = 0;
 // //		if (chit_detected) chit_detected=false;
-		high_level_counter++;///Увеличиваем счетчик длительности высокоуровнего сигнала на ножке ИК-приемника
+		high_level_counter++;///Increment the HIGH-level counter
 		if((start_bit_received)&&(high_level_counter > IR_ZERO*8)/*&&(bit_in_rx_buff>=13)*/)
-		{//Фиксируем окончание приема по таймауту
-			start_bit_received	= false; 	//отменяем прием
-			if (bit_in_rx_buff>=13) rx_event = RX_COMPLETE;			//Генерим событие "принят пакет"
-			else rx_event = RX_ERROR;			//генерируем событие - "ошибка приёма"
+		{//Set a TIMEOUT deadline for the counter
+			start_bit_received	= false; 		//Cancel state
+			if (bit_in_rx_buff>=13) rx_event = RX_COMPLETE;	//We have received a full packet..
+			else rx_event = RX_ERROR;			//..or we have an RX-error
 			
-			receiver_on = false;//выключаем приемник
-			if (ir_transmitter_on==false) TIMSK &=~_BV(OCIE2); //если передача не ведётся - выключаем прерывания
+			receiver_on = false;//Turn off the reciever
+			if (ir_transmitter_on==false) TIMSK &=~_BV(OCIE2); //If the transmission was not - turn off interrupts (FIXME: Not sure what this is supposed to do/mean)
 		}
 		if((high_level_counter > IR_ZERO*8)&&(ir_transmitter_on==false))
 		{
-			receiver_on = false;//выключаем приемник
+			receiver_on = false;// turn off the receiver
 			TIMSK &=~_BV(OCIE2);
 		}
 	
 	}
 if (ir_transmitter_on==true)
-	{//Если передача разрешена
+	{//If we can send... then do
 
-		if (ir_pulse_counter > 0)		//необходимая длительность пачки импульсов 
-		{								//ещё не достигнута, "мигаем" дальше
-			IR_LED_INVERT;  			//необходимая длительность пачки 
+		if (ir_pulse_counter > 0)		//check the IR-LED pulse-counter
+		{					//Not reached ? then we ...
+			IR_LED_INVERT;  		//invert the LED-state (for modulation)
 			ir_pulse_counter--;
 		}
-		else							//пачка импульсов была отправлена, 
+		else					//End reached ? then we...
 		{
-			IR_LED_OFF;			//тушим ИК-диод 
-			if ( ir_space_counter > 0)	//проверим, выдержан ли промежуток между импульсами
-			{							//нет, промежуток не выдержан
+			IR_LED_OFF;			//turn off the LED
+			if ( ir_space_counter > 0)	//check to see if the gap is maintained between the pulses.
+			{							//Nope, no gap
 			
-					IR_LED_OFF;	//тушим ИК-диод
-					ir_space_counter--;	//уменьшаем обратный счетчик паузы на один "тик"		
+					IR_LED_OFF;		//Turn off LED
+					ir_space_counter--;	//Decrease the countdown-pause with one TICK		
 			}
-			else //Пакет импульсов и промежуток между битами переданы
-			{	 //нужно формировать следующую пачку (передаваемый бит)
+			else //data-packet and gap between bits have been sent..
+			{	 //..we need to prepare the next packet for transmission
 				
 				
-				if (data_packet.data[cursor_position]!=0) //если указатель указывает не на пустую ячейку
+				if (data_packet.data[cursor_position]!=0) //Check to see if we don't point to an empty cell
 				{
-					ir_pulse_counter =data_packet.data[cursor_position++] ; //передадим импульс указанной длительностью
-					ir_space_counter = IR_SPACE;      //и про паузу не забудем
+					ir_pulse_counter =data_packet.data[cursor_position++] ; //set up the counter
+					ir_space_counter = IR_SPACE;      //and we of course add a space
 				}
-				else //Все данные переданы (элемент, на который ссылается указатель, равен 0)
+				else // .. If the cell WAS empty, then all data is transmitted..
 				{
-					ir_transmitter_on=false; //выключаем передатчик
+					ir_transmitter_on=false; //..so we turn off the transmitter
 				//	display_bullets_update();
 					FIRE_LED_OFF;
 					display_bullets_update_now++;
-				// если 	
-					if (!receiver_on) //если нет приема пакета
+				// if
+					if (!receiver_on) // If there is no packet reception..
 					{
-						TIMSK &=~_BV(OCIE2);          // Запрещаем прерывания по захвату/сравнению
+						TIMSK &=~_BV(OCIE2);          // ...we disable interrupts for the capture/compare unit 
 						
 					}
 					//TIMSK |= _BV(OCIE2);   
@@ -94,8 +94,7 @@ if (ir_transmitter_on==true)
 
 
 	}
-else 	{//Если передача запрещена
-
+else 	{//if the transfer is prohibited, we do nothing
 		}
 
 
@@ -104,79 +103,78 @@ else 	{//Если передача запрещена
 
 
 /**************************************************************************************
-* Обработчик внещних прерываний вывода INT0
+* Handler for external input via INT0 interrupt
 ***************************************************************************************/
 
 
 ISR(INT0_vect){
-TIMSK |= _BV(OCIE2);          // Разрешаем прерывания по захвату/сравнению
+TIMSK |= _BV(OCIE2);		// Enable interrupt on capture/compare
 receiver_on = true;
-if(!(MCUCR&_BV(ISC00)))		 //если прерывание вызвано спадом 
+if(!(MCUCR&_BV(ISC00)))		//if the interrupt is caused by the recession (FIXME: "recession" is likely wrong word, based on context: 'HI->LO flank ?')
 	{
-		MCUCR |=_BV(ISC00); //следующее прерывание будет сгенерировано фронтом
-		if (start_bit_received)//Если старт-бит принят, то идет прием пакета
+		MCUCR |=_BV(ISC00); 	//cause next interrupt to come from LOW->HIGH transition
+		if (start_bit_received)	//If the start-bit has been recieved, packet-reception has started
 			{
-				if((high_level_counter < (IR_SPACE + ERROR_TOLERANCE))&&(high_level_counter > (IR_SPACE - ERROR_TOLERANCE)))//Проверим длительность паузы между битами
+				if((high_level_counter < (IR_SPACE + ERROR_TOLERANCE))&&(high_level_counter > (IR_SPACE - ERROR_TOLERANCE)))//Check the pause between pulses
 				{
-					//длительность паузы между импульсами корректна
+					//pause between pulses is within specifications
 				}
-				else //Длительность паузы между приемом битов не корректна
-				{//Фиксируем ошибку приёма
-						start_bit_received	= false; 	//отменяем прием
-						bit_in_rx_buff = 0;				//очищаем буфер
-						rx_event = RX_ERROR;			//генерируем событие - "ошибка приёма"
-//						TIMSK &= ~_BV(OCIE2);          // Запрещаем прерывания по захвату/сравнению
+				else 	//the pause between pulses is not correct
+				{	//fix a reception error
+						start_bit_received	= false;	//cancel reception state
+						bit_in_rx_buff = 0;			//clear the buffer
+						rx_event = RX_ERROR;			//generate a 'RECEPTION ERROR' event
+//						TIMSK &= ~_BV(OCIE2);			//disable interrupts for the capture/compare
 				}
 			
 			
 			}		
-		low_level_counter = 0;//Обнуляем счетчик длительности низкоуровнего сигнала на ножке ИК-приёмника
-		high_level_counter = 0;//Обнуляем счетчик длительности высокоуровнего сигнала на ножке ИК-приёмника
+		low_level_counter = 0;	//clear LOW-level tick-counter
+		high_level_counter = 0;	//clear HIGH-level tick-counter
 	}
-else 						//прерывание вызвано фронтом 
+else 					//Interrupt is caused by the front (FIXME: i am guessing 'LOW-HIGH flank' ?)
 	{
-		MCUCR &=~_BV(ISC00); //следующее прерывание будет сгенерировано спадом
+		MCUCR &=~_BV(ISC00);	//make next interrupt come from HIGH->LOW transition
 		
-		if (start_bit_received)//Если старт-бит принят, то идет прием пакета
+		if (start_bit_received)	//if start-bit has been received, packet-reception has started
 			{
-				if((low_level_counter < (IR_ZERO + ERROR_TOLERANCE))&&(low_level_counter > (IR_ZERO - ERROR_TOLERANCE)))//Проверим, соответствует ли длительность пакета нулевому биту
+				if((low_level_counter < (IR_ZERO + ERROR_TOLERANCE))&&(low_level_counter > (IR_ZERO - ERROR_TOLERANCE)))//Check to see if bit is a 'ZERO' bit
 				{
-					set_buffer_bit(bit_in_rx_buff++, false);//Длительность пачки соответствует биту со значением 0, заносим ноль в буфер приема
+					set_buffer_bit(bit_in_rx_buff++, false);//The bit is a valid zero bit; we add it to the RX-buffer
 				
 				}
-				else //Нет, это не бит со значением 0
+				else	//No, it's not a valid 'ZERO' bit...
 				{
-					if((low_level_counter < (IR_ONE + ERROR_TOLERANCE))&&(low_level_counter > (IR_ONE - ERROR_TOLERANCE)))//, может это бит со значением 1?
+					if((low_level_counter < (IR_ONE + ERROR_TOLERANCE))&&(low_level_counter > (IR_ONE - ERROR_TOLERANCE)))//perhaps it's a 'ONE' bit ?
 					{
-							set_buffer_bit(bit_in_rx_buff++, true);//Длительность пачки соответствует биту со значением 1, заносим еденицу в буфер приема		
+							set_buffer_bit(bit_in_rx_buff++, true);//Yep, it's a 'ONE' bit, we add it to the RX-buffer		
 					}
-					else //Это ни единица, ни ноль - это помеха 
+					else //It's not a 'ZERO' and not a 'ONE'. It's a menace...
 					{
-						start_bit_received	= false; 	//отменяем прием
-						bit_in_rx_buff = 0;				//очищаем буфер
-						rx_event = RX_ERROR;			//генерируем событие - "ошибка приёма"
-//						TIMSK &= ~_BV(OCIE2);          // Запрещаем прерывания по захвату/сравнению
+						start_bit_received	= false;	//cancel reception state
+						bit_in_rx_buff = 0;			//clear the buffer
+						rx_event = RX_ERROR;			//generate a 'RECEPTION ERROR' event
+//						TIMSK &= ~_BV(OCIE2);			// disable interrupts for the capture/compare
 					}
 				}
 			}
-		else //Старт-бит ещё не принят
+		else 	// start bit has not been received yet; ....let's check to see if this is one...
 		{
-			if ((low_level_counter < (IR_START + ERROR_TOLERANCE))&&(low_level_counter > (IR_START - ERROR_TOLERANCE))) //Может это старт-бит?	
-			{//Это старт-бит
-				bit_in_rx_buff = 0;				//очищаем буфер
-				start_bit_received	= true; 	//разрешаем прием пакетов (бит)
+			if ((low_level_counter < (IR_START + ERROR_TOLERANCE))&&(low_level_counter > (IR_START - ERROR_TOLERANCE))) //Is this a start_bit ?	
+			{//This IS the start-bit!
+				bit_in_rx_buff = 0;			//we clear the buffer
+				start_bit_received	= true;		//and we set the reception state 
 				
 			}
-			else //это не старт-бит, это помеха 
+			else	//It's not a starbit either... It's really useless signal
 			{
-				//Игнорируем
+				//... so we ignore it.
 			}
 		}
 		
 		
-		low_level_counter = 0;//Обнуляем счетчик длительности низкоуровнего сигнала на ножке ИК-приёмника
-		high_level_counter = 0;//Обнуляем счетчик длительности высокоуровнего сигнала на ножке ИК-приёмника
-	
+		low_level_counter = 0;		//clear LOW-level tick-counter
+		high_level_counter = 0;		//clear HIGH-level tick-counter
 	
 
 
@@ -186,8 +184,8 @@ else 						//прерывание вызвано фронтом
 
 
 /**************************************************************************************
-* Обработчик внещних прерываний вывода INT1
-* наступает при поднесении ключа тачмемори к считывателю
+* routine for processing INT1 interrupt
+* Triggered when touching 'touch-memory' to reader
 ***************************************************************************************/
 
 
@@ -202,21 +200,21 @@ tm_read_serial_number();
 
 
 
-uint8_t read_seimpl(){//считываем очередной сеймпл из буфера
+uint8_t read_seimpl(){//Read the next segment from buffer ; defined here for use in TIMER1A Interrupt Service Routine (below).
 uint8_t result;
 
 //result = usartRxBuf[curr_pos_in_sound_buff];
 if (!eeprom_is_open) {
-eeprom_is_open = open_eeprom(eeprom_read_byte(&sound_1_adress));//открываем eeprom
+eeprom_is_open = open_eeprom(eeprom_read_byte(&sound_1_adress));//open the EEPROM
 }
-if (simples_in_queue==1)//если это последний сеймпл в буфере
+if (simples_in_queue==1)	//if this is the last byte in the sample
 		{
-			close_eeprom(&result);//считываем боследний буйт и закрываем eeprom
+			close_eeprom(&result);			//read the final byte and close the EEPROM
 			eeprom_is_open = false;
 		}
-else //это не последний сейипл в буфере
+else 				//if this is NOT the last byte in the sample
 		{
-			read_eeprom_byte(&result); //считываем очередной байт
+			read_eeprom_byte(&result); //read the next byte
 			
 		}
 
@@ -226,15 +224,15 @@ if (simples_in_queue==cut_off_sound)//(eeprom_read_word(&sound_1_size)/100)*(100
 		if (fire_mode()==queues)
 		{
 			
-		if ((get_keyboard_status()==key_pressed)&&(life>0)&&(bullets>0)) //курок нажат, то отсекаем звук
+		if ((get_keyboard_status()==key_pressed)&&(life>0)&&(bullets>0)) //The fire-trigger has been pressed; we cut the sound off!
 			{
-							bullets--;//уменьшаем на 1 количество патронов
-							send_ir_package();	//Производим "выстрел"
+							bullets--;		//We subtract 1 bullet from the total, first...
+							send_ir_package();	//..and then we produce a 'shot' packet
 							
-//							last_simple=0;		//воспроизводим звук сначала
-							close_eeprom(&result);//считываем боследний буйт и закрываем eeprom
+//							last_simple=0;		//restart the sound from start
+							close_eeprom(&result);// read the final byte and close the EEPROM
 							eeprom_is_open = false;
-			//eeprom_is_open = open_eeprom(eeprom_read_byte(&sound_1_adress));//открываем eeprom
+			//eeprom_is_open = open_eeprom(eeprom_read_byte(&sound_1_adress));//Open the EEPROM
 							simples_in_queue=eeprom_read_word(&sound_1_size);
 
 				//			display_bullets_update();
@@ -255,26 +253,30 @@ return result;
 
 
 /**************************************************************************************
-* Обработчик внещних прерываний timer1A
+* Interrupt service routine for Timer1A; 
+* used for playing sound, 
+* keyboard handling,
+* display updating,
+* handling 'HIT's
 ***************************************************************************************/
 
 ISR(TIMER1_COMPA_vect){
-TIMSK &= ~_BV(OCIE1A);  //запрещаем прерывания timer1, чтобы не было рекурсии
-sei(); 
-//uart_timer++;
-if ((bullets >0))//&&(!play_hit_snd))//если патроны не кончились
-{
+	TIMSK &= ~_BV(OCIE1A);  //disable interrupts for Timer1 to avoid recursion
+	sei(); 
+	//uart_timer++;
+	if ((bullets >0))//&&(!play_hit_snd))//if you are not out of ammo
+	{
 
-	if (simples_in_queue>0) //если не все сеймплы ещё воспроизведены
-	{ 
+		if (simples_in_queue>0) //if not zero, we keep playing the sample
+		{ 
 		
 		
-		OCR0 =	read_seimpl();
-		if (simples_in_queue==1) OCR0=0;
-		simples_in_queue--;
+			OCR0 =	read_seimpl();
+			if (simples_in_queue==1) OCR0=0;
+			simples_in_queue--;
 
 
-	}
+		}
 
 //if (()(!play_hit_snd)) OCR0=0;
 
@@ -290,11 +292,11 @@ if ((bullets >0))//&&(!play_hit_snd))//если патроны не кончились
 				{
 					if (fire_mode()==queues)
 					{
-						if ((get_keyboard_status()==key_pressed)&&(life>0)) //курок нажат, то отсекаем звук
+						if ((get_keyboard_status()==key_pressed)&&(life>0)) //If 'fire' trigger is pulled; we cut sound off
 						{
-							bullets--;//уменьшаем на 1 количество патронов
-							send_ir_package();	//Производим "выстрел"
-							last_simple=0;		//воспроизводим звук сначала
+							bullets--;		//we take one bullet
+							send_ir_package();	//..and produce a 'shot' packet
+							last_simple=0;		//we reset the sample byte-counter
 						}
 						else 	{};//fire_led_status=ON;						
 					}
@@ -308,7 +310,7 @@ if ((bullets >0))//&&(!play_hit_snd))//если патроны не кончились
 			{
 			//	last_simple = 0;
 			//	PORTA &= ~(1 << 2);
-				OCR0 = 128; //Скважность = 0,5
+				OCR0 = 128; //Duty-cycle = 0,5
 //				fire_led_status=OFF;
 				//FIRE_LED_OFF;
 			};
@@ -317,37 +319,33 @@ if ((bullets >0))//&&(!play_hit_snd))//если патроны не кончились
 }
 
 /*
-if (bullets <= 0) //патроны кончились
+if (bullets <= 0) //ran out of ammo
 	{
-		BULLETS_OUT_LED_ON; // включаем светодиод "Патроны кончились"
-		if (last_simple < sizeof(pSnd)) {OCR0 = pgm_read_byte(&(pSnd[last_simple++]));}//дадим выстрелу прозвучать до конца
+		BULLETS_OUT_LED_ON; // Turn on 'Out of Ammo' LED
+		if (last_simple < sizeof(pSnd)) {OCR0 = pgm_read_byte(&(pSnd[last_simple++]));}//РґР°РґРёРј РІС‹СЃС‚СЂРµР»Сѓ РїСЂРѕР·РІСѓС‡Р°С‚СЊ РґРѕ РєРѕРЅС†Р°
 		else {};//fire_led_status = OFF;
 	};
 
 */
 
-if (bullets <= 0) //патроны кончились
+	if (bullets <= 0) //Ran out of ammo
 	{
-		BULLETS_OUT_LED_ON; // включаем светодиод "Патроны кончились"
-		if (simples_in_queue>0) //если не все сеймплы ещё воспроизведены
-		{ 
-		
-		
+		BULLETS_OUT_LED_ON; // Turn on 'Out of AMMO' LED
+		if (simples_in_queue>0) //if bytes left in sample queue, we play them...
+		{
 			OCR0 =	read_seimpl();
 			if (simples_in_queue==1) OCR0=0;
 			simples_in_queue--;
-
-
 		}
 
-		//if (last_simple < sizeof(pSnd)) {OCR0 = pgm_read_byte(&(pSnd[last_simple++]));}//дадим выстрелу прозвучать до конца
+		//if (last_simple < sizeof(pSnd)) {OCR0 = pgm_read_byte(&(pSnd[last_simple++]));}//....
 		//else {};//fire_led_status = OFF;
 	};
 
 
-static volatile uint16_t tmp_cntr=0;
+	static volatile uint16_t tmp_cntr=0;
 
-	if ((tmp_cntr - (tmp_cntr/100)*100)==0)
+	if ((tmp_cntr - (tmp_cntr/100)*100)==0)// time to check for keyboard presses
 	{
 		
 		uart_timer++;
@@ -391,7 +389,7 @@ static volatile uint16_t tmp_cntr=0;
 
 //cli();
 
-if (++tmp_cntr > 1000) //пора обновить индикацию
+	if (++tmp_cntr > 1000) //It's time to update the display!
 	{
 		  
 /*
@@ -408,68 +406,67 @@ display_voltage_update(adc_data);
 		static volatile uint8_t bit_mask = 0b00000001;
 	
 		if ((life_leds_status[0]&bit_mask)==0) 
-			{
-				LIFE_LED1_OFF;
-			}
+		{
+			LIFE_LED1_OFF;
+		}
 		else 
-			{
-				LIFE_LED1_ON;
-			};
+		{
+			LIFE_LED1_ON;
+		};
 		if ((life_leds_status[1]&bit_mask)==0) 
-			{
-				LIFE_LED2_OFF;
-			}
+		{
+			LIFE_LED2_OFF;
+		}
 		else 
-			{
-				LIFE_LED2_ON;
-			};
+		{
+			LIFE_LED2_ON;
+		};
 		if ((life_leds_status[2]&bit_mask)==0) 
-			{
-				LIFE_LED3_OFF;
-			}
+		{
+			LIFE_LED3_OFF;
+		}
 		else 
-			{
-				LIFE_LED3_ON;
-			};
+		{
+			LIFE_LED3_ON;
+		};
 
 		if ((life_leds_status[3]&bit_mask)==0) 
-			{
-				LIFE_LED4_OFF;
-			}
+		{
+			LIFE_LED4_OFF;
+		}
 		else 
-			{
-				LIFE_LED4_ON;
-			};
+		{
+			LIFE_LED4_ON;
+		};
 
 /*
-		if ((fire_led_status&bit_mask)==0)
-			{
-				FIRE_LED_OFF;
-			}
-		else
-			{
-				FIRE_LED_ON;
-			};
+			if ((fire_led_status&bit_mask)==0)
+				{
+					FIRE_LED_OFF;
+				}
+			else
+				{
+					FIRE_LED_ON;
+				};
 
 
 */
 		bit_mask = (bit_mask<<1);
 		if (bit_mask == 0)  bit_mask = 0b00000001;
-
 	
 	}
 
 
 /*
-if (play_hit_snd) // если нужно воспроизвести звук ранения
+if (play_hit_snd) // if we're in the middle of playing the 'HIT' sound
 	{
-		if (snd_adress.end_adress >= snd_adress.curr_adress) //звук до конца не воспроизведён
+		if (snd_adress.end_adress >= snd_adress.curr_adress) //... we're not done playing it yet
 		{
 						
 			OCR0 = pgm_read_byte(snd_adress.curr_adress++);
 		}
 
-		if (snd_adress.end_adress < snd_adress.curr_adress)//звук воспроизведён до конца
+		if (snd_adress.end_adress < snd_adress.curr_adress)//we've completed playing it
 		{
 		
 			snd_adress.curr_adress = (uint8_t*)0xFFFF;
@@ -486,13 +483,13 @@ if (fcurr_simple_prepared)
 		fcurr_simple_prepared = false;
 	}
 
-if(!(TSOP_IN&TSOP_PIN))//если на входе INT0 низкий уровень
+if(!(TSOP_IN&TSOP_PIN))//if INT0 is low 
 	{
 		if (chit_detected_counter < (4000)) chit_detected_counter++;
 		if (chit_detected_counter >= (4000)) chit_detected=true;
 
 	}
-else { // если высокий
+else { 			// if INT0 is HIGH
 		chit_detected_counter = 0;
 		if (chit_detected) chit_detected=false;
 }
@@ -501,7 +498,7 @@ timer2++;
 
 cli();
 
-TIMSK |= _BV(OCIE1A);  //теперь вновь разрешаем прерывания timer1
+TIMSK |= _BV(OCIE1A);  //Now re re-anble the TIMER1 interrupt
 
 
 }
@@ -514,7 +511,7 @@ inline  TKEYBOARD_STATUS get_keyboard_status(void) {
 
 volatile	TKEYBOARD_STATUS s_ret;
 	
-	switch (FIRE_KEY_IN&FIRE_KEY_PIN) //проверяем, нажат ли курок
+	switch (FIRE_KEY_IN&FIRE_KEY_PIN) //Check to see if 'FIRE' trigger is pulled
 		{
 			case FIRE_KEY_PIN: s_ret=no_key_pressed  ; break;
 			default: s_ret=key_pressed ;	
@@ -531,7 +528,7 @@ inline  TKEYBOARD_STATUS get_reload_key_status(void) {
 
 volatile	TKEYBOARD_STATUS s_ret;
 	
-	switch (RELOAD_KEY_IN&RELOAD_KEY_PIN) //проверяем, нажат ли кнопка "перезарядить"
+	switch (RELOAD_KEY_IN&RELOAD_KEY_PIN) //Check to see if 'RELOAD' button is pressed (FIXME: why is this in here twice ? See below ?)
 		{
 			case RELOAD_KEY_PIN: s_ret=no_key_pressed  ; break;
 			default: s_ret=key_pressed ;	
@@ -548,7 +545,7 @@ inline  TKEYBOARD_EVENT test_keyboard(void){
 	TKEYBOARD_STATUS key_status;
 	TKEYBOARD_EVENT ret_ev;
 	key_status=get_keyboard_status();
-	switch(key_status)  //проверяем, что нажато
+	switch(key_status)  //Check to see if any keyboard button is pressed
 	{
 		case no_key_pressed: 
 		{
@@ -571,7 +568,7 @@ inline  TKEYBOARD_EVENT test_keyboard(void){
 		
 		} 
 		break;
-	 	case key_pressed  : //нажата кнопка 1
+	 	case key_pressed  : //Key '1' pressed
 		{ 
 			if(key_pressing_duration.key_1>= SHORT_DURATION)
 			{
@@ -601,7 +598,7 @@ inline  TKEYBOARD_EVENT test_reload_key(void){
 	TKEYBOARD_STATUS key_status;
 	TKEYBOARD_EVENT ret_ev;
 	key_status=get_reload_key_status();
-	switch(key_status)  //проверяем, что нажато
+	switch(key_status)  //check if 'RELOAD' pressed (FIXME: why is this in here twice ? see above)
 	{
 		case no_key_pressed: 
 		{
@@ -624,7 +621,7 @@ inline  TKEYBOARD_EVENT test_reload_key(void){
 		
 		} 
 		break;
-	 	case key_pressed  : //нажата кнопка "Перезарядить"
+	 	case key_pressed  : //'RELOAD' has been pressed
 		{ 
 			if(key_pressing_duration.key_2>= SHORT_DURATION)
 			{

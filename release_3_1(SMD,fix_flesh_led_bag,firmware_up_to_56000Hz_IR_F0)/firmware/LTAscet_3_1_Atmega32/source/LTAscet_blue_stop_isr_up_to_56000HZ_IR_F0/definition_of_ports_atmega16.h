@@ -38,7 +38,7 @@
 #define FIRE_KEY_DDR DDRB
 #define FIRE_KEY_IN PINB
 
-#define RELOAD_KEY_PORT PORTB //Порт, к которому подключен переключатель "DAMAGE" (урон)
+#define RELOAD_KEY_PORT PORTB //This port is connected to the switch "DAMAGE" (done)
 #define RELOAD_KEY_DDR DDRB 
 #define RELOAD_KEY_IN PINB
 
@@ -78,7 +78,7 @@
 #define FIRE_MODE_KEY_PIN (1<<1)
 
 /*
-#define SW_DAMAGE_PORT PORTB //Порт, к которому подключен переключатель "DAMAGE" (урон)
+#define SW_DAMAGE_PORT PORTB //This port is connected to the switch "DAMAGE" (Done)
 #define SW_DAMAGE_DDR DDRB 
 #define SW_DAMAGE_IN PINB
 #define SW_DAMAGE_MASK ((1<<0)|(1<<1))
@@ -86,7 +86,7 @@
 #define SW_DAMAGE_KEY2_PIN (1<<1)
 
 
-#define SW_TEAM_PORT PORTA //Порт, к которому подключен переключатель "TEAM_ID" (цвет команды)
+#define SW_TEAM_PORT PORTA //This port is connected to the switch "TEAM_ID" (team color)
 #define SW_TEAM_DDR DDRA
 #define SW_TEAM_IN PINA
 #define SW_TEAM_MASK ((1<<0)|(1<<1))
@@ -95,7 +95,7 @@
 
 
 
-#define SW_BULLETS_LIMIT_PORT PORTD //Порт, к которому подключен переключатель "BULLETS_LIMIT" (лимит патронов)
+#define SW_BULLETS_LIMIT_PORT PORTD //This port is connected to the switch "BULLETS_LIMIT" (limit of rounds)
 #define SW_BULLETS_LIMIT_DDR DDRD
 #define SW_BULLETS_LIMIT_IN PIND
 #define SW_BULLETS_LIMIT_MASK ((1<<5)|(1<<6))
