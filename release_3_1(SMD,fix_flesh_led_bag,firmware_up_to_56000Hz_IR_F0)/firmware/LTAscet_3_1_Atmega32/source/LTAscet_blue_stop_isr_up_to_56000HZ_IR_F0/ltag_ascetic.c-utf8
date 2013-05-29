@@ -1618,7 +1618,6 @@ char* int_to_str(uint8_t x, uint8_t digits){
 static volatile char str[6];
 
 
-
 volatile uint8_t celoe, ostatok;
 celoe=x;
 //tmp = celoe/100;

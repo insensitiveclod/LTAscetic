@@ -1,45 +1,45 @@
-#define SHIFT_REGISTER_DS_PORT PORTB //порт, к которуму подключен вход DS (данные) сдвигового регистра
-#define SHIFT_REGISTER_SH_CP_PORT PORTB //порт, к которуму подключен вход SH_CP (тактовые импульсы) сдвигового регистра
-#define SHIFT_REGISTER_ST_CP_PORT PORTB //порт, к которуму подключен вход ST_CP ("защлка" данных) сдвигового регистра
+#define SHIFT_REGISTER_DS_PORT PORTB 	//Port connected to DS-line (data) of shift-register
+#define SHIFT_REGISTER_SH_CP_PORT PORTB //Port connected to SH_CP (clock) of shift-register
+#define SHIFT_REGISTER_ST_CP_PORT PORTB //Port connected to ST_CP (latch) of shift register
 
-#define SHIFT_REGISTER_DS_DDR DDRB //управл€ющий регистр, к которуму подключен вход DS (данные) сдвигового регистра
-#define SHIFT_REGISTER_SH_CP_DDR DDRB //управл€ющий регистр, к которуму подключен вход SH_CP (тактовые импульсы) сдвигового регистра
-#define SHIFT_REGISTER_ST_CP_DDR DDRB //управл€ющий регистр, к которуму подключен вход ST_CP ("защлка" данных) сдвигового регистра
+#define SHIFT_REGISTER_DS_DDR DDRB 	//control_register associated with DS-line (data) of shift-register
+#define SHIFT_REGISTER_SH_CP_DDR DDRB 	//control_register associated with SH_CP (clock) of shift-register
+#define SHIFT_REGISTER_ST_CP_DDR DDRB 	//control_register associated with ST_CP (latch) of shift-register
 
-#define SHIFT_REGISTER_DS_PIN (1<<5) //вывод, к которуму подключен вход DS (данные) сдвигового регистра
-#define SHIFT_REGISTER_SH_CP_PIN (1<<7) //вывод, к которуму подключен вход SH_CP (тактовые импульсы) сдвигового регистра
-#define SHIFT_REGISTER_ST_CP_PIN (1<<6) //вывод, к которуму подключен вход ST_CP ("защлка" данных) сдвигового регистра
-
-
+#define SHIFT_REGISTER_DS_PIN (1<<5) 	//pin of output port connected to DS-line (data) of shift-register
+#define SHIFT_REGISTER_SH_CP_PIN (1<<7) //pin of output port connected to SH_CP (clock) of shift-register
+#define SHIFT_REGISTER_ST_CP_PIN (1<<6) //pin of output port connected to ST_CP (latch) of shift-register
 
 
-//все что ниже, при переопределении портов и пинов не трогаем!
-
-#define SIHFT_REGISTER_DS_ON SHIFT_REGISTER_DS_PORT|=SHIFT_REGISTER_DS_PIN //выставл€ем в "1" сигнал DS  
-#define SIHFT_REGISTER_DS_OFF SHIFT_REGISTER_DS_PORT&=~SHIFT_REGISTER_DS_PIN //выставл€ем в "0" сигнал DS  
-
-#define SHIFT_REGISTER_SH_CP_ON SHIFT_REGISTER_SH_CP_PORT|=SHIFT_REGISTER_SH_CP_PIN //выставл€ем в "1" сигнал SH_CP
-#define SHIFT_REGISTER_SH_CP_OFF SHIFT_REGISTER_SH_CP_PORT&=~SHIFT_REGISTER_SH_CP_PIN //выставл€ем в "0" сигнал SH_CP
-
-#define SHIFT_REGISTER_ST_CP_ON SHIFT_REGISTER_ST_CP_PORT|=SHIFT_REGISTER_ST_CP_PIN ////выставл€ем в "1" сигнал ST_CP
-#define SHIFT_REGISTER_ST_CP_OFF SHIFT_REGISTER_ST_CP_PORT&=~SHIFT_REGISTER_ST_CP_PIN ////выставл€ем в "0" сигнал ST_CP 
 
 
-//настраиваем все управл€ющие сдвиговым регистром выводы как "выходы"
+//Do not edit below! Override pins and ports above!
+
+#define SIHFT_REGISTER_DS_ON SHIFT_REGISTER_DS_PORT|=SHIFT_REGISTER_DS_PIN 	//Put a '1' on DS (FIXME: define-name typo!)
+#define SIHFT_REGISTER_DS_OFF SHIFT_REGISTER_DS_PORT&=~SHIFT_REGISTER_DS_PIN 	//Put a '0' on DS
+
+#define SHIFT_REGISTER_SH_CP_ON SHIFT_REGISTER_SH_CP_PORT|=SHIFT_REGISTER_SH_CP_PIN	//Put a '1' on SH_CP
+#define SHIFT_REGISTER_SH_CP_OFF SHIFT_REGISTER_SH_CP_PORT&=~SHIFT_REGISTER_SH_CP_PIN	//Put a '0' on SH_CP
+
+#define SHIFT_REGISTER_ST_CP_ON SHIFT_REGISTER_ST_CP_PORT|=SHIFT_REGISTER_ST_CP_PIN 	//Put a '1' on ST_CP
+#define SHIFT_REGISTER_ST_CP_OFF SHIFT_REGISTER_ST_CP_PORT&=~SHIFT_REGISTER_ST_CP_PIN	//Put a '0' on ST_CP 
+
+
+//Set up all pins used for connecting to the shift-register as 'OUTPUT's
 void init_shift_register(void){ //
-SHIFT_REGISTER_DS_DDR|=SHIFT_REGISTER_DS_PIN;
-SHIFT_REGISTER_SH_CP_DDR|= SHIFT_REGISTER_SH_CP_PIN;
-SHIFT_REGISTER_ST_CP_DDR|= SHIFT_REGISTER_ST_CP_PIN;
+	SHIFT_REGISTER_DS_DDR|=SHIFT_REGISTER_DS_PIN;
+	SHIFT_REGISTER_SH_CP_DDR|= SHIFT_REGISTER_SH_CP_PIN;
+	SHIFT_REGISTER_ST_CP_DDR|= SHIFT_REGISTER_ST_CP_PIN;
 
-SIHFT_REGISTER_DS_OFF;
-SHIFT_REGISTER_SH_CP_OFF;
-SHIFT_REGISTER_ST_CP_OFF;
+	SIHFT_REGISTER_DS_OFF;
+	SHIFT_REGISTER_SH_CP_OFF;
+	SHIFT_REGISTER_ST_CP_OFF;
 };
 
 void shift_register_set_data(volatile uint8_t shift_data){
-volatile uint8_t mask;
-mask = 0b10000000;
-for (int i=0; i<8; i++)	
+	volatile uint8_t mask;
+	mask = 0b10000000;
+	for (int i=0; i<8; i++)	
 	{
 		if ((mask&shift_data) ==0) 
 		{SIHFT_REGISTER_DS_OFF;}	
@@ -61,5 +61,5 @@ for (int i=0; i<8; i++)
 
 
 void shift_register_clean(void){
-shift_register_set_data(0);
+	shift_register_set_data(0);
 }

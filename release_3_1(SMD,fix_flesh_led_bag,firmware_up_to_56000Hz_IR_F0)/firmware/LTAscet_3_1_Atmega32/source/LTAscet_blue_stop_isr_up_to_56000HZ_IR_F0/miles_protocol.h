@@ -1,56 +1,34 @@
-#define IR_START_BIT_DURATION 2400	// Длительность Старт-Бита (в микросекундах)
-#define IR_ONE_BIT_DURATION 1200	// Длительность Бита, соотретствующего единичке (в микросекундах)
-#define IR_ZERO_BIT_DURATION 600	// Длительность Бита, соотретствующего нулю (в микросекундах)
-#define IR_SPACE_DURATION 600		// Длительность Бита, соотретствующего интервалу между битами (в микросекундах)
-#define IR_F0 56000					// Несущая частота ИК-приемника (f0)
+#define IR_START_BIT_DURATION 2400	// duration of START_BIT (in msecs)
+#define IR_ONE_BIT_DURATION 1200	// duration of a 'ONE' bit  (in msecs)
+#define IR_ZERO_BIT_DURATION 600	// duration of a 'ZERO' bit (in msecs)
+#define IR_SPACE_DURATION 600		// duration of if inter-bit interval (gap between bits)
+#define IR_F0 56000			// Carrier frequency of IR-receiver (F0)
 //#define IR_F0 36000
 
-#define IR_ZERO (IR_ZERO_BIT_DURATION*2*IR_F0)/1000000 //Длительность импулся, соответствующего биту = 0
-													  //выраженная в "тиках" таймера 
+#define IR_ZERO (IR_ZERO_BIT_DURATION*2*IR_F0)/1000000 	//Amount of timer-ticks for a 'ZERO' bit (TX)
 
+#define RX_IR_ZERO (IR_ZERO_BIT_DURATION*8)/1000 	//Amount of timer-ticks for a 'ZERO' bit (RX)
 
-#define RX_IR_ZERO (IR_ZERO_BIT_DURATION*8)/1000 //Длительность импулся, соответствующего биту = 0
-													  //выраженная в "тиках" таймера 
+#define IR_ONE (IR_ONE_BIT_DURATION*2*IR_F0)/1000000 	//Amount of timer-ticks for a 'ONE' bit (TX)
 
+#define RX_IR_ONE (IR_ONE_BIT_DURATION*8)/1000 		//Amount of timer-ticks for a 'ONE' bit (RX)
 
+#define IR_START (IR_START_BIT_DURATION*2*IR_F0)/1000000 	//Amount of timer-ticks for the 'START_BIT' (TX)
 
-#define IR_ONE (IR_ONE_BIT_DURATION*2*IR_F0)/1000000 //Длительность импулся, соответствующего биту = 1
-													  //выраженная в "тиках" таймера 
+#define RX_IR_START (IR_START_BIT_DURATION*8)/1000 		//Amount of timer-ticks for the 'START_BIT' (RX)
 
-#define RX_IR_ONE (IR_ONE_BIT_DURATION*8)/1000 //Длительность импулся, соответствующего биту = 1
-													  //выраженная в "тиках" таймера 
+#define IR_SPACE  (IR_SPACE_DURATION*2*IR_F0)/1000000 		//Amount of timer-ticks for inter-bit interval (gap between bits) (TX)
 
+#define RX_IR_SPACE  (IR_SPACE_DURATION*8)/1000 		//Amount of timer-ticks for inter-bit interval (gap between bits) (RX)
 
+#define ERROR_TOLERANCE 22					//(At F0=56khz)Tick-tolerance to use for checking bit-validity (expressed in timer-ticks)
 
-#define IR_START (IR_START_BIT_DURATION*2*IR_F0)/1000000 //Длительность заголовка 
-														//выраженная в "тиках" таймера 
-
-
-#define RX_IR_START (IR_START_BIT_DURATION*8)/1000 //Длительность заголовка 
-														//выраженная в "тиках" таймера 
-
-
-#define IR_SPACE  (IR_SPACE_DURATION*2*IR_F0)/1000000 //Длительность интервала между передоваемыми битами
-														//выраженная в "тиках" таймера 
-
-
-#define RX_IR_SPACE  (IR_SPACE_DURATION*8)/1000 //Длительность интервала между передоваемыми битами
-														//выраженная в "тиках" таймера 
-
-
-
-
-
-#define ERROR_TOLERANCE 22//(Если F0=56000)Допустимая погрешность длительности принимаемых бит (в "тиках" таймера)
-
-//#define ERROR_TOLERANCE 14 //(Если F0=36000)
-
-
+//#define ERROR_TOLERANCE 14 					//(At F0=36Khz)Tick-tolerance to use for checking bit-validity (expressed in timer-ticks)
 
 
 //---------------------------------------------------------------------//
 
-enum Team_Color {	//Определим перечисляемый тип для работы с цветом команды
+enum Team_Color {		//Define an enumerated type for the colors of the teams
 	Red, 	//00 = Red
 	Blue, 	//01 = Blue		
 	Yellow, //10 = Yellow
@@ -61,11 +39,7 @@ typedef enum Team_Color tteam_color;
 //---------------------------------------------------------------------//
 
 
-
-
-
-//Определим перечисляемый тип
-//для работы с "уроном"
+//Define an enumerated type for use with the gun-damage
 enum GunDamage {	
 	
 	Damage_1,  //0000 = 1
@@ -90,10 +64,7 @@ enum GunDamage {
 typedef enum GunDamage tgun_damage; 	
 
 
-
-
 //---------------------------------------------------------------------//
-
 
 /*
 union player_id_union {

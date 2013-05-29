@@ -1,4 +1,5 @@
-//#include <util/delay.h>    // Дает возможность формирования задержки
+// TODO: Fix code-cleanup in tm_read_serial_number
+//#include <util/delay.h>    	// Supplies delay-routines
 
 #define TM_TX_PULLDOWN()   DDRD|=(1<<3);
 #define TM_TX_RELEASE()   DDRD &=~(1<<3); 	
@@ -44,25 +45,25 @@ volatile  unsigned char ch;
 volatile unsigned char crc8;
 volatile unsigned char code;
 volatile unsigned char in;
-volatile unsigned char device_code; //код устройства
-volatile unsigned char tm_code[6]; //считанный код ключа Touch_memory 
-volatile TTM_EVENT tm_event; //события считывателя TouchMemory
+volatile unsigned char device_code; 	//Device code 
+volatile unsigned char tm_code[6]; 	//read the TouchMemory code
+volatile TTM_EVENT tm_event; 		//touch-memory event
 
 
 
 
 
 /**************************************************************************************
-* Функция выполняет настройку внешних прерываний вывода INT1
+* This function configures pin for triggering external interrupt INT1
 ***************************************************************************************/
 void init_tm(void){
-tm_connect = false;
-DDRD &=~(1<<3); 				//Настраиваем вывод INT1 как вход
-PORTD&=~(1<<3);					//Выключаем подтягивающий резистор 
-MCUCR |=_BV(ISC11);				//Прерывания будут генерироваться 
-MCUCR &=~_BV(ISC10);			//по спаду импульса
-GICR |=_BV(INT1); 				//Разрешаем внешние прерывания на INT1
-tm_event = no_tm_event;
+	tm_connect = false;
+	DDRD &=~(1<<3); 			//Set the pin as input for INT1
+	PORTD&=~(1<<3);				//Turn off internal pull-up resistor
+	MCUCR |=_BV(ISC11);			//Enable triggering of interrupts..
+	MCUCR &=~_BV(ISC10);			//..on HIGH->LOW transition
+	GICR |=_BV(INT1); 			//Enable interrupt on INT1
+	tm_event = no_tm_event;
 }
 
 
@@ -70,7 +71,7 @@ tm_event = no_tm_event;
 /*****************************************************************************
  * tm_send
  *
- * Отправка байта.
+ * For sending bytes
  */
 void tm_send( unsigned char byte )
 {
@@ -82,21 +83,21 @@ void tm_send( unsigned char byte )
 
         if( b & 1 )
         {
-			/* write-one */
-			TM_TX_PULLDOWN();
+		/* write-one */
+		TM_TX_PULLDOWN();
 	        TM_TX_RELEASE();
-			delay( 80 );	
+		delay( 80 );	
         }
         if ((b&1)==0)
         {
           /* write-zero */
-         	TM_TX_PULLDOWN();
-			delay( 70 );
-	        TM_TX_RELEASE();
-   		    delay( 20 );	 		   
+		TM_TX_PULLDOWN();
+		delay( 70 );
+		TM_TX_RELEASE();
+		delay( 20 );	 		   
         }
 
-        b >>= 1;
+	b >>= 1;
     }
 }
 
@@ -106,7 +107,7 @@ void tm_send( unsigned char byte )
 /*****************************************************************************
  * tm_read
  *
- * Приём байта.
+ * For Receiving bytes
  */
 unsigned char tm_read()
 {
@@ -124,8 +125,8 @@ unsigned char tm_read()
         in =  (PIND) & (1<<3);
 //        eint();
         ret >>= 1;
-        if(in)
-            ret |= (1<<7);
+	if(in)
+		ret |= (1<<7);
         /* release & recovery */
         delay( 200);
     }
@@ -136,7 +137,7 @@ unsigned char tm_read()
 /*****************************************************************************
  * new_crc8
  *
- * Вычисление нового значения CRC8.
+ * Calculation of CRC8 checksum
  */
 unsigned char new_crc8( unsigned char crc8, unsigned char byte )
 {
@@ -158,15 +159,15 @@ unsigned char new_crc8( unsigned char crc8, unsigned char byte )
 
 void tm_read_serial_number()
 {       
-//GICR &=~_BV(INT1); 				//Запрешаем внешние прерывания на INT1
+//GICR &=~_BV(INT1); 				//Disable triggering INT1
 
 uint8_t read_attempts = 1;
-while( read_attempts-- )
-if (tm_event==no_tm_event)  {
+while( read_attempts-- )      // FIXME: there is NO curly brace here
+if (tm_event==no_tm_event)  { // FIXME: There is a curly brace here
 
 
 
-	{	delay(512); 
+	{	delay(512);   // FIXME: But why is there one here ?
 
 
 
@@ -174,8 +175,8 @@ if (tm_event==no_tm_event)  {
 		/* reset */
 		TM_TX_PULLDOWN();
 		delay(480);  /* tRSTL > 480us */
-		/* завершаем импульс сброса, проверяем уровень, должен быть высокий */
-//		cli(); //запрещаем общие прерывания
+		/* Reset pulse is complete; check to see if level is HIGH */
+//		cli(); //Do not allow global interrupt
 		TM_TX_RELEASE();
 //		GIFR &=~_BV(INTF1);
 
@@ -183,37 +184,37 @@ if (tm_event==no_tm_event)  {
 //		GIFR |=_BV(INTF1);
  		if( (PIND&(1<<3)) == 0 )
         {
-            /* вероятно, вход просто закорочен */
+            /* probably just shorted input */
 //            sei();
             continue;
         }
-		 	/* контролируем presence pulse */
+		 	/* Check 'presence pulse' */
         
 		delay(80);  /* 60us minimum tPDL */
-//		sei(); //разрешаем общие прерывания
+//		sei(); //Allow shared interrupts
 
 		if( PIND&(1<<3) )
-            /* что-то не так, уровень должен оставаться низким */
+            /* Something is wrong; level should be LOW */
             continue;
 
-		/* ожидаем завершения presence pulse */
+		/* Continue to completion of 'presence pulse' */
 
         delay(240); /* tPDL */
         if( !(PIND&(1<<3)) )
-            /* таймаут */
+            /* С‚Р°Р№РјР°СѓС‚ */
             continue;
 
-		/* выдерживаем высокий уровень tRSTH */
+		/* FIXME: translation 'withstands high tRSTH' */
         delay( 480 );
 		
-		  /* посылаем команду Read ROM */
+		  /* send command 'Read ROM' */
         tm_send( 0x33 );
 
- /* читаем тип устройства */
+ /* Read device type */
       
 		device_code = tm_read();
         if( 0 == device_code)
-        /* тип устройства не может быть нулевым */
+        /* Type of device cannot be '0' */
         continue;
 
 		
@@ -221,14 +222,14 @@ if (tm_event==no_tm_event)  {
 		crc8 = new_crc8( 0, device_code);
 
 
- /* читаем код */
+ /* Read code */
         for( ch = 0; ch < 6; ch++ )
         {
             code = tm_read();
             tm_code[ ch ] = code;
             crc8 = new_crc8( crc8, code );
         }
- /* читаем crc8 и проверяем */
+ /* Read and check CRC8 */
         ch = tm_read();
 		if( ch != crc8 )
            {
@@ -241,25 +242,25 @@ if (tm_event==no_tm_event)  {
 		return;}
 
 	}
-///	sei(); //разрешаем общие прерывания
+///	sei(); //Allow shared interrupts
 	}
 GIFR |=_BV(INTF1);
-//GICR |=_BV(INT1); 				//Разрешаем внешние прерывания на INT1
+//GICR |=_BV(INT1); 				//Enable triggering of  INT1
 
 } 	
 
 /******************************************
-* сравниваем считанный сериный номер ключа 
-* с номером, записанным в eeprom
+* Compare retrieved serial key 
+* with value stored in EEPROM
 *******************************************/
 
 uint8_t tm_verification(void)
 {
-if (eeprom_read_byte(&eeprom_tm_serial_num.device_code)!=device_code) return 0;
-for (int i = 0; i<6; i++ )
-						{
-							if (eeprom_read_byte(&eeprom_tm_serial_num.serial[i])!=tm_code[i])  return 0;
+	if (eeprom_read_byte(&eeprom_tm_serial_num.device_code)!=device_code) return 0;
+	for (int i = 0; i<6; i++ )
+		{
+			if (eeprom_read_byte(&eeprom_tm_serial_num.serial[i])!=tm_code[i])  return 0;
 
-						}
-return 1;
+		}
+	return 1;
 }

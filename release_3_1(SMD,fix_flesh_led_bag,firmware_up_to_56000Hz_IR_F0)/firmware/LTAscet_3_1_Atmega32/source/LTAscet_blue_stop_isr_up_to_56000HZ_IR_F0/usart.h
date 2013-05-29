@@ -6,9 +6,11 @@
 //
 //  Compiler....: WINAVR
 //
-//  Description.: драйвер USART/UART с кольцевым буфером
+//  Description.: Driver for  USART/UART with circular buffer
 //
 //  Data........: 11.01.10 
+//
+//  Translation to english and code cleanup: 2013 05 29
 //
 //***************************************************************************
 #ifndef USART_H
@@ -18,34 +20,31 @@
 #include <avr/interrupt.h>
 #include <avr/pgmspace.h>
 
-
-
-
 #ifndef F_CPU
-	#define F_CPU 16000000     //задаем частоту кварца
+	#define F_CPU 16000000     //Set CPU-frequency to 16Mhz if not set already
 #endif
-#define BAUD 9600         //требуемую скорость обмена
-#include <util/setbaud.h> //здесь лежат макросы для расчета
+#define BAUD 9600         //desired baud-rate
+#include <util/setbaud.h> //Provides macros for calculation of baud-rate
 
-//макросы для разрешения и запрещения прерываний usart`a
+//Macros to enable and disable interrupts related to USART
 #define EnableRxInt()   UCSRB |= (1<<RXCIE);
 #define DisableRxInt()  UCSRB &= (~(1<<RXCIE));
 #define EnableTxInt()   UCSRB |= (1<<TXCIE);
 #define DisableTxInt()  UCSRB &= (~(1<<TXCIE));
 
 
-#define SIZE_BUF 256       //и размер кольцевых буферов - <255
+#define SIZE_BUF 256       //define ring-buffer size <255
 
 
 
 
-void USART_Init(void); //инициализация usart`a
-unsigned char USART_GetTxCount(void); //взять число символов передающего буфера
-void USART_FlushTxBuf(void); //очистить передающий буфер
-void USART_PutChar(unsigned char sym); //положить символ в буфер
-void USART_SendStr(char * data); //послать строку по usart`у
-void USART_SendStrP(char * data); //послать строку из памяти программ по usart`у
-unsigned char USART_GetRxCount(void); //взять число символов в приемном буфере
-void USART_FlushRxBuf(void); //очистить приемный буфер
-unsigned char USART_GetChar(void); //прочитать приемный буфер usart`a 
+void USART_Init(void); 			//Initialize USART
+unsigned char USART_GetTxCount(void); 	//Get the number of characters in TX-buffer
+void USART_FlushTxBuf(void);		//Clear the TX-Buffer
+void USART_PutChar(unsigned char sym);	//Put a character into TX-buffer
+void USART_SendStr(char * data);	//Send a string via USART
+void USART_SendStrP(char * data);	//Send a string in PROGMEM via USART
+unsigned char USART_GetRxCount(void);	//Get the number of characters in the RX-buffer
+void USART_FlushRxBuf(void);		//Clear the RX-buffer
+unsigned char USART_GetChar(void);	//Retrieve next character in RX-buffer
 #endif //USART_H
