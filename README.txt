@@ -9,7 +9,8 @@ Goals of the project in order of (personal) importance
 - Provide project documentation (overview, structure, assembly, operation, end-user)
 - Check licensing issues of code used (usart, lcd, etc)
 - Code-cleanup; coding-style + missing comments
-- Provide alternative build-environment for development in full OSS environment
+- Provide alternative build-environment for development in full OSS environment (DONE: turns out /default dir contains working makefile once /default/dep/ dir has been cleaned)
+- Did regression-check. If commands.h translation of protocol-strings is reverted, it provides identical md5sum to original code
 - Rework PCB in OSS-licensed tool (kicad)
 
 
