@@ -590,7 +590,7 @@ switch(reload_key_event)
 		}
 
 	};
-return 0;
+    return 0;
 
 }
 
@@ -1584,10 +1584,10 @@ void invite(){ 			//present menu settings
 		if (joystick_event==key_central_pressing) 
 		{
 		
-				get_int_settings("Идент. игрока:", &eeprom_player_id, 127); //нажата центральная кнопка
-				get_int_settings("Идент. команды:", &eeprom_team_id, 3); //нажата центральная кнопка
+				get_int_settings("Идент. игрока:", &eeprom_player_id, 127); // Pressed center button
+				get_int_settings("Идент. команды:", &eeprom_team_id, 3); // pressed center button
 				get_enum_settings("Наносимый урон:", &eeprom_damage, &damage_value, Damage_100);
-				get_int_settings("Емкость магазина:", &eeprom_bullets_in_clip, 90); //нажата центральная кнопка 
+				get_int_settings("Емкость магазина:", &eeprom_bullets_in_clip, 90); //Pressed center button
 				get_int_settings("Магазинов:", &eeprom_clips, 90);
 				get_int_settings("Время перезаряда:", &eeprom_reload_duration, 8);
 			//	return;
@@ -1701,7 +1701,7 @@ if (digits == 0)
 
 
 
-volatile void get_int_settings(char* text, uint8_t* var_adress, uint8_t max_value){//Получаем значения настроек с помощью джойстика и ЖКИ
+volatile void get_int_settings(char* text, uint8_t* var_adress, uint8_t max_value){//Get the value of options using the joystick and LCD
 uint8_t result;
 joystick_event=no_pressing;
 result = eeprom_read_byte(var_adress);
@@ -1779,7 +1779,7 @@ if (result != eeprom_read_byte(var_adress))
 	{
 	
 	lcd_clrscr();
-	lcd_puts("Сохранение...");
+	lcd_puts("Сохранение..."); // Trans: 'Saving...'
 	eeprom_write_byte(var_adress, result);	
 	}
 }
@@ -1800,7 +1800,7 @@ lcd_clrscr();
 lcd_puts(text);
 lcd_gotoxy(0, 1);
 lcd_puts(int_to_str(value,3));
-lcd_puts(" центр.кн.-OK");
+lcd_puts(" центр.кн.-OK"); // Trans: 'tsentr.kn-OK' (possibly shortened)
 
 while  (joystick_event!=key_central_pressing)
 {
@@ -1825,8 +1825,8 @@ while  (joystick_event!=key_central_pressing)
 			if ((result)<max_value) result++;
 			lcd_gotoxy(0, 1);
 			lcd_puts(int_to_str(pgm_read_byte(arr_adress+result),3));
-			//lcd_puts("Нажата кнопка \n");
-			//lcd_puts("Вправо");
+			//lcd_puts("Нажата кнопка \n");  	// Trans: 'Key pressed \n';
+			//lcd_puts("Вправо");				// Trans: 'Right';
 			joystick_event = no_pressing;
 		}
 		break;
@@ -1845,8 +1845,8 @@ while  (joystick_event!=key_central_pressing)
 			//lcd_clrscr();
 			//lcd_gotoxy(0, 0);
 			if ((result)>0) result--;
-			//lcd_puts("Нажата кнопка \n");
-			//lcd_puts("Влево");
+			//lcd_puts("Нажата кнопка \n");		// Trans: 'Key pressed \n';
+			//lcd_puts("Влево");				// Trans: 'Left'
 			lcd_gotoxy(0, 1);
 			lcd_puts(int_to_str(pgm_read_byte(arr_adress+result),3));
 			joystick_event = no_pressing;
@@ -1867,7 +1867,7 @@ if (result != eeprom_read_byte(var_adress))
 	{
 	
 	lcd_clrscr();
-	lcd_puts("Сохранение...");
+	lcd_puts("Сохранение...");					// Trans: 'Saving...'
 	eeprom_write_byte(var_adress, result);	
 	}
 
@@ -1893,17 +1893,17 @@ if (eeprom_read_byte(&friendly_fire_enable)>1) eeprom_write_byte(&friendly_fire_
 
 
 
-void display_status()//выводим на дисплей текущее значение жизни, патронов, магазинов 
+void display_status()//Display the current value of life, ammunition and clips
 {
 	lcd_clrscr();
-	lcd_puts("жизнь: ");
+	lcd_puts("жизнь: ");						// Trans: 'Life' (health)
 	lcd_puts(int_to_str(life_in_percent,0));
 	lcd_puts("% ");
 	lcd_gotoxy(0, 1);
-	lcd_puts("патр: ");
+	lcd_puts("патр: ");							// Trans: 'Patriarch' (seems to refer to bullets)
 	lcd_puts(int_to_str(bullets,0));
 	lcd_gotoxy(10, 1);
-	lcd_puts("м: ");
+	lcd_puts("м: ");							// Trans: 'm' (clips ?)
 	lcd_puts(int_to_str(clips,0));
 	lcd_puts(" ");
 
@@ -1912,7 +1912,7 @@ void display_status()//выводим на дисплей текущее зна�
 }
 
 
-void display_life_update(){//обновляем значение жизни на дисплее
+void display_life_update(){//update the value of life on display
 lcd_gotoxy(7, 0);
 lcd_puts(int_to_str(life_in_percent,0));
 lcd_puts("%   ");
@@ -1920,29 +1920,29 @@ lcd_puts("%   ");
 
 
 
-void display_bullets_update(){//обновляем значение жизни на дисплее
+void display_bullets_update(){//update the amount of bullets left on display
 lcd_gotoxy(6, 1);
 lcd_puts(int_to_str(bullets,0));
 lcd_puts(" ");
 }
 
-void display_clips_update(){//обновляем значение жизни на дисплее
+void display_clips_update(){//update the amount of clips left on display
 lcd_gotoxy(13, 1);
 lcd_puts(int_to_str(clips,0));
 lcd_puts(" ");
 }
 
 
-void display_voltage_update(){//обновляем значение жизни на дисплее
+void display_voltage_update(){//Update battery-level on display
 
 volatile uint16_t adc_data;
 //volatile uint16_t batt_voltage;
 adc_data=ReadADC(ADC_CHANNEL);
 
 
-uint16_t delta; //разница между значениями АЦП при полностью заряженной и полностью разряженной батареи
-uint8_t curr_batt_level; //текузий уровеь состояния батареи (1 из 6 возможных)
-uint16_t full_level, low_level;//значения полностью заряженной и полностью разряженной батареи в значениях АЦП
+uint16_t delta; //The difference, expressed in ADC-values, between fully charged and fully discharged batteries
+uint8_t curr_batt_level; //	tekuzy urove battery status (1 out of 6 possible) FIXME: error in translation
+uint16_t full_level, low_level;//ADC value of fully charged and fully discharged battery-voltages
 full_level = (eeprom_read_word(&eeprom_batt_full_voltage)*4)/75;
 low_level = (eeprom_read_word(&eeprom_batt_low_voltage)*4)/75;
 
@@ -2011,8 +2011,8 @@ lcd_puts(" ");
 void init_adc(void)
 {
 
-ADMUX=((1<<REFS0)|(1<<REFS1));//выбираем внутренний источник опорного напряжения
-ADCSRA=(1<<ADEN)|(1<<ADPS2)|(1<<ADPS1)|(1<<ADPS0); //Rrescalar div factor =128
+ADMUX=((1<<REFS0)|(1<<REFS1));//Select the internal voltage reference
+ADCSRA=(1<<ADEN)|(1<<ADPS2)|(1<<ADPS1)|(1<<ADPS0); //Prescaler div factor =128
 
 
 }
@@ -2042,20 +2042,20 @@ uint16_t ReadADC(uint8_t ch)
 
 
 /********************************************
-*покажем кто в нас попал и какой урон нанёс
+*Show who hit us and what damage was inflicted
 ********************************************/
 
 void display_hit_data(void)
 {
 lcd_clrscr();
 lcd_home();
-lcd_puts("Урон ");
+lcd_puts("Урон ");							// Trans: Damage
 lcd_puts(int_to_str(rx_packet.damage,0));
-lcd_puts("% нанес");
+lcd_puts("% нанес");						// Trans: '% paid' (done ?)
 lcd_gotoxy(0, 1);
-lcd_puts("иг. ");
+lcd_puts("иг. ");							// Trans: u. (player ID ?)
 lcd_puts(int_to_str(rx_packet.player_id,0));
-lcd_puts(" ком. ");
+lcd_puts(" ком. ");							// Trans: com (team id ?)
 lcd_puts(int_to_str(rx_packet.team_id,0));
 }
 
@@ -2070,12 +2070,12 @@ uint8_t value;
 joystick_event=no_pressing;
 result = eeprom_read_byte(&eeprom_curr_ir_pin);
 lcd_clrscr();
-lcd_puts("Мощность ИК для");
+lcd_puts("Мощность ИК для");				//Trans: Power to the IR (led)
 lcd_gotoxy(0, 1);
-if (result==IR_LED_HIGH_POWER_PIN) lcd_puts("улицы");
-if (result==IR_LED_LOW_POWER_PIN) lcd_puts("помещ");
+if (result==IR_LED_HIGH_POWER_PIN) lcd_puts("улицы");	// Trans: 'Street' (Outdoor)
+if (result==IR_LED_LOW_POWER_PIN) lcd_puts("помещ");	// Trans: 'ind'		(indoor)
 
-lcd_puts(" цен.кн.-OK");
+lcd_puts(" цен.кн.-OK");								// Trans: tsen.kn-ok
 
 while  (joystick_event!=key_central_pressing)
 {
@@ -2103,7 +2103,7 @@ while  (joystick_event!=key_central_pressing)
 			{
 				result=IR_LED_HIGH_POWER_PIN;
 				lcd_gotoxy(0, 1);
-				lcd_puts("улицы");
+				lcd_puts("улицы");				// Trans: 'street'
 			}
 			
 			joystick_event = no_pressing;
@@ -2128,7 +2128,7 @@ while  (joystick_event!=key_central_pressing)
 			{
 				result=IR_LED_LOW_POWER_PIN;
 				lcd_gotoxy(0, 1);
-				lcd_puts("помещ");
+				lcd_puts("помещ");			// Trans: 'ind'
 			}
 			
 			joystick_event = no_pressing;
@@ -2149,7 +2149,7 @@ if (result != eeprom_read_byte(&eeprom_curr_ir_pin))
 	{
 	
 	lcd_clrscr();
-	lcd_puts("Сохранение...");
+	lcd_puts("Сохранение...");			//Trans: 'Saving...'
 	eeprom_write_byte(&eeprom_curr_ir_pin, result);	
 	}
 
@@ -2159,17 +2159,17 @@ if (result != eeprom_read_byte(&eeprom_curr_ir_pin))
 
 
 
-void get_friendly_fire_settings(void)//включение/отключение "дружественного" огня
+void get_friendly_fire_settings(void)//Enable/disable detection of friendly-fire
 {
 uint8_t result;
 uint8_t value;
 joystick_event=no_pressing;
 result = eeprom_read_byte(&friendly_fire_enable);
 lcd_clrscr();
-lcd_puts("Дружеств. огонь:");
+lcd_puts("Дружеств. огонь:");		//Trans: 'Commonwealth. fire' 
 lcd_gotoxy(0, 1);
-if (result) lcd_puts("Да ");
-else lcd_puts("Нет");
+if (result) lcd_puts("Да ");		// Trans: 'Yes'
+else lcd_puts("Нет");				// Trans: 'No'
 
 lcd_puts(" цен.кн.-OK");
 
@@ -2199,7 +2199,7 @@ while  (joystick_event!=key_central_pressing)
 			{
 				result=true;
 				lcd_gotoxy(0, 1);
-				lcd_puts("Да ");
+				lcd_puts("Да ");			//Trans 'Da'
 			}
 			
 			joystick_event = no_pressing;
@@ -2224,7 +2224,7 @@ while  (joystick_event!=key_central_pressing)
 			{
 				result=false;
 				lcd_gotoxy(0, 1);
-				lcd_puts("Нет");
+				lcd_puts("Нет");		// Trans: 'No'
 			}
 			
 			joystick_event = no_pressing;
@@ -2245,7 +2245,7 @@ if (result != eeprom_read_byte(&friendly_fire_enable))
 	{
 	
 	lcd_clrscr();
-	lcd_puts("Сохранение...");
+	lcd_puts("Сохранение...");					// Trans: 'Saving...'
 	eeprom_write_byte(&friendly_fire_enable, result);	
 	}
 
@@ -2258,13 +2258,13 @@ if (result != eeprom_read_byte(&friendly_fire_enable))
 
 void get_all_setings(void)
 {
-	get_int_settings("Идент. игрока:", &eeprom_player_id, 127); //нажата центральная кнопка
-	set_player_id(eeprom_read_byte(&eeprom_player_id));	//Устанавливаем идентификатор игрока
-	get_int_settings("Идент. команды:", &eeprom_team_id, 3); //нажата центральная кнопка
-	set_team_color(team_id());	//Устанавливаем идентификатор (цвет) команды
+	get_int_settings("Идент. игрока:", &eeprom_player_id, 127); //Pressed the center button
+	set_player_id(eeprom_read_byte(&eeprom_player_id));	//Set the ID of the player
+	get_int_settings("Идент. команды:", &eeprom_team_id, 3); //Pressed the center button
+	set_team_color(team_id());	//Set team id (color)
 	get_enum_settings("Наносимый урон:", &eeprom_damage, &damage_value, Damage_100);
-	set_gun_damage(gun_damage());		//Устанавливаем мощьность оружия (урон)
-	get_int_settings("Емкость магазина:", &eeprom_bullets_in_clip, 90); //нажата центральная кнопка 
+	set_gun_damage(gun_damage());		//Set bullet damage-level (Done)
+	get_int_settings("Емкость магазина:", &eeprom_bullets_in_clip, 90); //Pressed the center button
 	get_int_settings("Магазинов:", &eeprom_clips, 90);
 	get_int_settings("Время перезаряда:", &eeprom_reload_duration, 8);
 	get_ir_power_settings();
@@ -2275,7 +2275,7 @@ void get_all_setings(void)
 
 
 
-uint8_t get_command_index(void)//проверим, что за команда пришла по UART
+uint8_t get_command_index(void)//Check for a command that came from the UART
 {
 volatile uint16_t delta;
 volatile char* cursor_pos;
@@ -2292,7 +2292,7 @@ uint8_t comand_len;
 		
 		unsigned char sym;
 		uint8_t sym_index = 0;
-		char* psym; //указатель на первый символ команды в памяти программ
+		char* psym; //pointer to the first character of the command in PROGMEM
 //		char* pos;
 //		char* pos_buff;
 		psym = (char*)(pgm_read_word(&(commandsPointers[index])));
@@ -2300,7 +2300,7 @@ uint8_t comand_len;
 		while((pgm_read_byte(psym)!=0))
 		{
 			sym = pgm_read_byte(psym);
-			cmd_buff[sym_index++] = sym; //копируем команду в буфер
+			cmd_buff[sym_index++] = sym; //copy command to clipboard
 			comand_len++;
 			psym++;
 		}
@@ -2324,7 +2324,7 @@ uint8_t comand_len;
 	
 	}
 
-	return 255; //не найдена такая команда в списке команд
+	return 255; //No such command found in the command-list
 }
 
 
@@ -2344,7 +2344,7 @@ while(usartRxBuf[rxBufHead] !='\r')
 	{
 
 		ch_tmp = usartRxBuf[rxBufHead++];
-		if (ch_tmp==' ') continue; //игнорируем пробелы
+		if (ch_tmp==' ') continue; //ignore whitespace
 		if ((ch_tmp >= '0')&&(ch_tmp<= '9'))
 		{
 			result = result*10+char_to_int(ch_tmp);
@@ -2356,20 +2356,19 @@ while(usartRxBuf[rxBufHead] !='\r')
 			return;
 			
 			//USART_SendStr("ERROR\n\r");
-			//return invalid;//недопустимый аргумент
-
+			//return invalid;//Invalid argument
 		}
 	}
 if (!param_not_empty) 
 	{
 		USART_SendStrP(parameter_empty_error);
-		return;//пустой аргумент
+		return;//Empty argument
 	}
 
 if ((result>max_val)||(result<min_val))
 	{
 		USART_SendStrP(parameter_out_of_range_error);
-		return;//аргумент больше максимально допустимого значения
+		return;//Argument out of bounds of permitted values
 	} 
 
 eeprom_write_byte(var_adress, result);	
@@ -2391,7 +2390,7 @@ while(usartRxBuf[rxBufHead] !='\r')
 	{
 
 		ch_tmp = usartRxBuf[rxBufHead++];
-		if (ch_tmp==' ') continue; //игнорируем пробелы
+		if (ch_tmp==' ') continue; //ignore whitespace
 		if ((ch_tmp >= '0')&&(ch_tmp<= '9'))
 		{
 			result = result*10+char_to_int(ch_tmp);
@@ -2403,20 +2402,20 @@ while(usartRxBuf[rxBufHead] !='\r')
 			return;
 			
 			//USART_SendStr("ERROR\n\r");
-			//return invalid;//недопустимый аргумент
+			//return invalid;//invalid argument
 
 		}
 	}
 if (!param_not_empty) 
 	{
 		USART_SendStrP(parameter_empty_error);
-		return;//пустой аргумент
+		return;//empty argument
 	}
 
 if ((result>max_val)||(result<min_val))
 	{
 		USART_SendStrP(parameter_out_of_range_error);
-		return;//аргумент больше максимально допустимого значения
+		return;//argument out of bounds of permitted values
 	} 
 
 eeprom_write_word(var_adress, result);	
@@ -2441,7 +2440,7 @@ while(usartRxBuf[rxBufHead] !='\r')
 	{
 
 		ch_tmp = usartRxBuf[rxBufHead++];
-		if (ch_tmp==' ') continue; //игнорируем пробелы
+		if (ch_tmp==' ') continue; //ignore whitespace
 		if ((ch_tmp >= '0')&&(ch_tmp<= '9'))
 		{
 			result = result*10+char_to_int(ch_tmp);
@@ -2513,7 +2512,7 @@ while(usartRxBuf[rxBufHead] !='\r')
 	{
 
 		ch_tmp = usartRxBuf[rxBufHead++];
-		if (ch_tmp==' ') continue; //игнорируем пробелы
+		if (ch_tmp==' ') continue; //ignore whitespace
 		if ((ch_tmp >= '0')&&(ch_tmp<= '9'))
 		{
 			result = result*10+char_to_int(ch_tmp);
@@ -2552,7 +2551,7 @@ while(usartRxBuf[rxBufHead] !='\r')
 	{
 
 		ch_tmp = usartRxBuf[rxBufHead++];
-		if (ch_tmp==' ') continue; //игнорируем пробелы
+		if (ch_tmp==' ') continue; //ignore whitespace
 		if ((ch_tmp >= '0')&&(ch_tmp<= '9'))
 		{
 			result = result*10+char_to_int(ch_tmp);
@@ -2581,7 +2580,7 @@ USART_FlushRxBuf();
 USART_SendStr("OK\r\n");
 
 uart_timer = 0;
-while ((uart_timer < 650)&&(rxCount<128)); //ждем приема 128 байт
+while ((uart_timer < 650)&&(rxCount<128)); //read until 128 bytes have been received
 if (rxCount>=128)
 	{
 		if(eeWriteBytes(&usartRxBuf[0], result*128, 128)) 
@@ -2614,7 +2613,7 @@ while(usartRxBuf[rxBufHead] !='\r')
 	{
 
 		ch_tmp = usartRxBuf[rxBufHead++];
-		if (ch_tmp==' ') continue; //игнорируем пробелы
+		if (ch_tmp==' ') continue; //Ignore whitespace
 		if ((ch_tmp >= '0')&&(ch_tmp<= '9'))
 		{
 			result = result*10+char_to_int(ch_tmp);
@@ -2654,7 +2653,7 @@ USART_FlushTxBuf();
 				if(((UCSRA & (1<<UDRE)) != 0)) 
   				{
   					UDR = usartTxBuf[0];
-					while (txCount); //пока все не отправим
+					while (txCount); //until all bytes are sent.
 					USART_SendStr("OK\r\n");
   				}
   				else
@@ -2703,7 +2702,7 @@ while(usartRxBuf[rxBufHead] !='\r')
 	{
 
 		ch_tmp = usartRxBuf[rxBufHead++];
-		if (ch_tmp==' ') continue; //игнорируем пробелы
+		if (ch_tmp==' ') continue; //Ignore whitespace
 		if ((ch_tmp >= '0')&&(ch_tmp<= '9'))
 		{
 			result = result*10+char_to_int(ch_tmp);
@@ -2849,7 +2848,7 @@ while(usartRxBuf[rxBufHead] !='\r')
 	{
 
 		ch_tmp = usartRxBuf[rxBufHead++];
-		if (ch_tmp==' ') continue; //игнорируем пробелы
+		if (ch_tmp==' ') continue; //Ignore whitespace
 		if ((ch_tmp >= '0')&&(ch_tmp<= '9'))
 		{
 			result = result*10+char_to_int(ch_tmp);
@@ -2964,7 +2963,7 @@ while(usartRxBuf[rxBufHead] !='\r')
 	{
 
 		ch_tmp = usartRxBuf[rxBufHead++];
-		if (ch_tmp==' ') continue; //игнорируем пробелы
+		if (ch_tmp==' ') continue; //Ignore whitespace
 		if ((ch_tmp >= '0')&&(ch_tmp<= '9'))
 		{
 			result = result*10+char_to_int(ch_tmp);
@@ -2976,20 +2975,20 @@ while(usartRxBuf[rxBufHead] !='\r')
 			return;
 			
 			//USART_SendStr("ERROR\n\r");
-			//return invalid;//недопустимый аргумент
+			//return invalid;//Invalid argument
 
 		}
 	}
 if (!param_not_empty) 
 	{
 		USART_SendStrP(parameter_empty_error);
-		return;//пустой аргумент
+		return;//Empty argument
 	}
 
 if ((result>1)||(result<0))
 	{
 		USART_SendStrP(parameter_out_of_range_error);
-		return;//аргумент больше максимально допустимого значения
+		return;//argument out of bounds of permitted values
 	} 
 
 switch (result)
@@ -3181,14 +3180,14 @@ uint8_t cmd_index;
 
 
 
-bool play_sound_from_eeprom(uint16_t address, uint16_t data_size) //воспроизводим звук непосредственно из eeprom
+bool play_sound_from_eeprom(uint16_t address, uint16_t data_size) //plays sound directly from EEPROM
 
 { 
 
-//	    uint8_t data; //Переменная, в которую запишем прочитанный байт
+//	    uint8_t data; //Variable to which we write the first byte
 	 
-	//Точно такой же кусок кода, как и в eeWriteByte...
-	/*****УСТАНАВЛИВАЕМ СВЯЗЬ С ВЕДОМЫМ********/
+	//The same piece of code as  eeWriteByte...
+	/*****Establishes a link with the EEPROM********/
 	    do
 	    {
 	        TWCR=(1<<TWINT)|(1<<TWSTA)|(1<<TWEN);
@@ -3204,7 +3203,7 @@ bool play_sound_from_eeprom(uint16_t address, uint16_t data_size) //воспро
 	 
 	    }while((TWSR & 0xF8) != TW_MT_SLA_ACK);
 	 
-	/*****ПЕРЕДАЕМ АДРЕС ЧТЕНИЯ********/
+	/*****pass the address to READ from********/
 	    TWDR=(address>>8);
 	    TWCR=(1<<TWINT)|(1<<TWEN);
 	    while(!(TWCR & (1<<TWINT)));
