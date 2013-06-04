@@ -1,9 +1,3 @@
-/* Note: the code used in this file seems to have been taken from http://nagits.wordpress.com/2010/12/18/avr_i2c_eeprom/
-   It would be good to check copyright on this code.
-   No english translation seems to exist at present: presenting back the english version might be the least I can do
-   -- Arnd; 20130604
-*/
-
 #include <avr/io.h>        /* Imports the names for the inputs in PORTA	*/
 #include <util/delay.h>    /* Supplies delay-routines			*/
 #include <avr/interrupt.h> /* We will use the interrupt handling	*/
@@ -95,7 +89,7 @@ uint8_t eeWriteByte(uint16_t address,uint8_t data)
  
     do
     {
-//Initialize the Register of the bus control in Remote Box (FIXME: this translation makes no sense)
+//Initialize the control-Register of the TWI-bus (TWCR)
 /*To start any data-transfer, it's required to create a so called 'start condition'. When at rest, the SCL and SDA lines of the bus are pulled HIGH. The master device (the AVR in our case) pulls the SDA line to LOW to indicate the start of a data-transfer.*/
  
 /*
@@ -105,54 +99,57 @@ c)Set 'Two Wire Enable' bit TWEN
 */
         TWCR=(1<<TWINT)|(1<<TWSTA)|(1<<TWEN);
  
-//Ждем, пока шина даст добро (возможно, линия пока еще занята, ждем)
-//TWINT бит устанавливается аппаратно, если TWI завершает текущее задание и ожидает реакции программы
+//Wait until register has been updated (the line may still be busy; so we we wait)
+//TWINT bit is set by hardware when TWI transfer completes.
         while(!(TWCR & (1<<TWINT)));
  
-        /*Проверяем регистр статуса, а точнее биты TWS3-7,
-        которые доступны только для чтения. Эти пять битов
-        отражают состояние шины. TWS2-0 «отсекаем» с помощью операции «И         0xF8». Если TWS7-3 = 0x08, то СТАРТ был успешным.*/
+        /*Now we check bits 3-7 of the status-register which are read-only
+        These bits reflect the state of the bus.
+        TWS2-0 are not read (by using "TWSR & 0xF8). If TWS7-3 = 0x08, then the TWI start was successful.*/
         if((TWSR & 0xF8) != TW_START)
            return false;
  
-/*К шине I2C может быть подключено множество подчиненных устройств (к примеру, много микросхем внешней памяти EEPROM). Для того, чтобы все микросхемы и контроллер знали, от кого и кому передается информация, в протоколе реализована Адресация ведомых устройств. В каждой микросхеме, предназначенной для работы с I2C, на заводе "зашит" определенный адрес. Мы этот адрес передаем по всей шине, т.е. всем ведомым. Каждый ведомый получает этот адрес и смотрит, типа мой это или чужой. Если мой, то О КРУТО, со мной хочет работать контроллер AVR. Так вот и происходит "рукопожатие" между ведущим и ведомым.*/
+/*The TWI (i2c) bus can have multiple slave devices connected. (for example, multiple external I2C EEPROMS). To be able to specify which chip to read from, the protocol
+implements an addressing-scheme. Each (slave) chip on the bus has it's own address that is set in the factory (but can sometimes be adjusted/altered by connecting certain pins to GND/VCC; check docs). To specify which slave we want to listen to our commands, we first send the address over the bus. All slaves listen to the bus but only one of them goes 'COOL! This is my address! I'd love to talk to you!' and will start a 'handshake' back to the master (AVR)*/
  
-/*Так вот, мы хотим работать с микросхемой памяти 24LC64, поэтому по шине нам надо передать ее адрес. Она узнает свой адрес, и будет знать, что данные на запись адресуются именно ей. А остальные микросхемы, если они есть, эти данные будут просто игнорировать.*/
+/*Now, we want to work with the EEPROM-memory chip 24LC64,so we need to send the address for this chip onto the bus. The chip will see the address and will know that the following data on the bus is addressed to it. The other slaves on the bus (if there are any) will simply ignore the data not meant for them.*/
  
-/*Постоянная часть адреса 24LC64 – 1010 (см. даташит на 24XX64), 3 бита - переменные (если вдруг мы захотим подключить несколько одинаковых микросхем c одинаковыми заводскими адресами, они пригодятся; в ином(нашем) случае выставляем нули), далее бит 0 - если хотим записывать в память или 1 - если читаем данные из памяти I2C EEPROM*/
+/*The 'fixed' part of the address for the is 24LC64 – 1010 (see datasheet for the 24XX64) and 3 'variable' bits. If we would like to connect multiple similar chips with the same 'fixed'-part, we can assign alternate addresses in this space. This is done by shorting certain pins on the EEPROM-chip to GND or VCC. After the fixed+variable bits comes an end-bit that indicates if you want to write (0) or want to read (1) from the i2c EEPROM*/
  
        //TWDR = 0b1010‘000‘0;
         TWDR = (slaveAddressConst<<4) + (slaveAddressVar<<1) + (WRITEFLAG);
 	 
-/*Говорим регистру управления, что мы хотим передать данные, содержащиеся в регистре данных TWDR*/
+/*Update the CONTROL REGISTER (TWCR) to tell the TWI-controller that we have set data ready in TWDR and want it sent onto the bus*/
         TWCR=(1<<TWINT)|(1<<TWEN);
 	 
-        //Ждем окончания передачи данных
+        //The TWCR register will have the TWINT bit set when it's done
         while(!(TWCR & (1<<TWINT)));
 	 
-	/*Если нет подтверждения от ведомого, делаем все по-новой (либо неполадки с линией, либо ведомого с таким адресом нет).
-	Если же подтверждение поступило, то регистр статуса установит биты в 0x18=TW_MT_SLA_ACK (в случае записи) или 0x40=TW_MR_SLA_ACK (в случае чтения).
-Грубо говоря, если TW_MT_SLA_ACK, то ведомый "говорит" нам, что его адрес как раз 1010’000 и он готов для записи (чтения, если TW_MR_SLA_ACK).*/
+	/*If there is no acknowledgement from the slave, we have to do it all over again. Perhaps there's a problem with the wires or
+	there is no slave on the bus with the right address.
+	If a confirmation (handshake) was received, the STATUS REGISTER would be set to 0x18=TW_MT_SLA_ACK (in the case of writing)
+	or 0x40=TW_MR_SLA_ACK (in the case of reading).
+	Roughly speaking, if we see TW_MT_SLA_ACK, it tells us that 1010’000 is the slave's address and it's ready for writing to (Or reading, if it's TW_MR_SLA_ACK).*/
     }while((TWSR & 0xF8) != TW_MT_SLA_ACK);
  
-/*Здесь можем уже уверенно говорить, что ведущий и ведомый друг друга видят и понимают. Вначале скажем нашей микросхеме памяти, по какому адресу мы хотим записать байт данных*/
+/*Here we can already say with confidence that both master and slave see eachother correctly and understand eachother. So now we can tell the memory-chip to which address inside of it's memory we want to write a byte of data*/
  
-/*****ПЕРЕДАЕМ АДРЕС ЗАПИСИ********/
+/*****Pass the WRITE address********/
 	 
-/*Записываем в регистр данных старший разряд адреса (адрес 16-битный, uint16_t))..*/
+/*Write the data in the register (MSB) (address 16-bits, uint16_t))..*/
     TWDR=(address>>8);
  
-    //..и передаем его
+    //..and send it
     TWCR=(1<<TWINT)|(1<<TWEN);
  
-    //ждем окончания передачи
+    //and wait for the transmission to complete...
     while(!(TWCR & (1<<TWINT)));
 	 
-/*Проверяем регистр статуса, принял ли ведомый данные. Если ведомый данные принял, то он передает "Подтверждение", устанавливая SDA в низкий уровень. Блок управления, в свою очередь, принимает подтверждение, и записывает в регистр статуса 0x28= TW_MT_DATA_ACK. В противном случае 0x30= TW_MT_DATA_NACK */
+/*Check the STATUS REGISTER to see if the slave took the data. If it received it all, it will send an ACKnowledgement by setting the SDA-line of the bus to LOW. The TWI-bus control-unit will see this and update the STATUS REGISTER. A good ACK is 0x28= TW_MT_DATA_ACK. If we get a NotAcknowledge: 0x30= TW_MT_DATA_NACK */
     if((TWSR & 0xF8) != TW_MT_DATA_ACK)
         return false;
 	 
-    //Далее тоже самое для младшего разряда адреса
+    //Then we do the same for the rest of the address; the LSB
     TWDR=(address);
     TWCR=(1<<TWINT)|(1<<TWEN);
     while(!(TWCR & (1<<TWINT)));
@@ -160,9 +157,9 @@ c)Set 'Two Wire Enable' bit TWEN
     if((TWSR & 0xF8) != TW_MT_DATA_ACK)
         return false;
  
-/*****ЗАПИСЫВАЕМ БАЙТ ДАННЫХ********/
+/*****Writing the data********/
  
-    //Аналогично, как и передавали адрес, передаем байт данных
+    //Just like how we sent the address, we push the data-byte onto the bus.
     TWDR=(data);
     TWCR=(1<<TWINT)|(1<<TWEN);
     while(!(TWCR & (1<<TWINT)));
@@ -170,11 +167,11 @@ c)Set 'Two Wire Enable' bit TWEN
     if((TWSR & 0xF8) != TW_MT_DATA_ACK)
         return false;
  
-    /*Устанавливаем условие завершения передачи данных (СТОП)
-    (Устанавливаем бит условия СТОП)*/
+    /*And we tell the bus we're done sending (STOP)
+    (Set the STOP-condition bit in the CONTROL REGISTER)*/
     TWCR=(1<<TWINT)|(1<<TWEN)|(1<<TWSTO);
  
-    //Ждем установки условия СТОП
+    //Wait until the CONTROL REGISTER has updated the STOP-bit
     while(TWCR & (1<<TWSTO));
  
     return true;
@@ -187,10 +184,10 @@ c)Set 'Two Wire Enable' bit TWEN
 
 uint8_t eeReadByte(uint16_t address)
 	{
-	    uint8_t data; //Переменная, в которую запишем прочитанный байт
+	    uint8_t data; //variable that'll contain the byte we will read from 'address'
 	 
-	//Точно такой же кусок кода, как и в eeWriteByte...
-	/*****УСТАНАВЛИВАЕМ СВЯЗЬ С ВЕДОМЫМ********/
+	//The same piece of code as eeWriteByte...
+	/*****Establishes a link with the EEPROM********/
 	    do
 	    {
 	        TWCR=(1<<TWINT)|(1<<TWSTA)|(1<<TWEN);
@@ -206,7 +203,7 @@ uint8_t eeReadByte(uint16_t address)
 	 
 	    }while((TWSR & 0xF8) != TW_MT_SLA_ACK);
 	 
-	/*****ПЕРЕДАЕМ АДРЕС ЧТЕНИЯ********/
+	/*****pass the address to READ from********/
 	    TWDR=(address>>8);
 	    TWCR=(1<<TWINT)|(1<<TWEN);
 	    while(!(TWCR & (1<<TWINT)));
@@ -221,133 +218,125 @@ uint8_t eeReadByte(uint16_t address)
 	    if((TWSR & 0xF8) != TW_MT_DATA_ACK)
 	        return false;
 	 
-	/*****ПЕРЕХОД В РЕЖИМ ЧТЕНИЯ********/
-	/*Необходимо опять «связаться» с ведомым, т.к. ранее мы отсылали адресный пакет (slaveAddressConst<<4) + (slaveAddressVar<<1) + WRITEFLAG, чтобы записать адрес чтения байта данных. А теперь нужно перейти в режим чтения (мы же хотим прочитать байт данных), для этого отсылаем новый пакет (slaveAddressConst<<4) + (slaveAddressVar<<1) + READFLAG.*/
+	/*****Switch to READ mode********/
+	/*This is required to 'contact' the slave. First we sent out the chip address (slaveAddressConst << 4) + (slaveAddressVar << 1) + WRITEFLAG to tell the chip which address we want to read a data-byte from. Now we switch to read (because we want to read that byte). This by writing '(slaveAddressConst << 4) + (slaveAddressVar << 1) + READFLAG to the bus.*/
 	 
-	    //Повтор условия начала передачи
+	    //We again initialize the bus with a 'repeated start condition'
 	    TWCR=(1<<TWINT)|(1<<TWSTA)|(1<<TWEN);
-	//ждем выполнения текущей операции
+	//... and wait for the operation to finish
 	    while(!(TWCR & (1<<TWINT)));
 	 
-	/*Проверяем статус. Условие повтора начала передачи (0x10=TW_REP_START) должно подтвердиться*/
+	/*We check the bus status; the 'repeated start condition' should be detected. (0x10 = TW_REP_START)*/
 	    if((TWSR & 0xF8) != TW_REP_START)
 	        return false;
 	 
-	    /*Записываем адрес ведомого (7 битов) и в конце бит чтения (1)*/
+	    /*Write the address (7bits) and the end-bit (1bit)*/
 	    //TWDR=0b1010’000’1;
 	    TWDR = (slaveAddressConst<<4) + (slaveAddressVar<<1) + READFLAG;        
 	 
-	//Отправляем..
+	//Send...
 	    TWCR=(1<<TWINT)|(1<<TWEN);
 	    while(!(TWCR & (1<<TWINT)));
 	 
-	/*Проверяем, нашелся ли ведомый с адресом 1010’000 и готов ли он работать на чтение*/
+	/*Check to see if a device was detected at address 0b1010'000 and if it's ready to read from*/
 	    if((TWSR & 0xF8) != TW_MR_SLA_ACK)
 	        return false;
 	 
-	/*****СЧИТЫВАЕМ БАЙТ ДАННЫХ********/
+	/*****Reads a byte of data********/
 	 
-	/*Начинаем прием данных с помощью очистки флага прерывания TWINT. Читаемый байт записывается в регистр TWDR.*/
+	/*Start data-reception by clearing the interrupt flag TWINT. TWDR will contain the byte that is read.*/
 	    TWCR=(1<<TWINT)|(1<<TWEN);
 	 
-	    //Ждем окончания приема..
+	    //Wait for reception to finish...
 	    while(!(TWCR & (1<<TWINT)));
 	 
-	/*Проверяем статус. По протоколу, прием данных должен оканчиваться без подтверждения со стороны ведущего (TW_MR_DATA_NACK = 0x58)*/
+	/*We check the bus status; according to specs, the status-register (TWSR) should indicate a NACK from the master (TW_MR_DATA_NACK = 0x58)*/
 	    if((TWSR & 0xF8) != TW_MR_DATA_NACK)
 	        return false;
 	 
-	    /*Присваиваем переменной data значение, считанное в регистр данных TWDR*/
+	    /*Take the byte out of the i2c data-register (TWDR) and stick it into a variable.*/
 	    data=TWDR;
 	 
-	    /*Устанавливаем условие завершения передачи данных (СТОП)*/
+	    /*Update the STATUS REGISTER to set a STOP-bit*/
 	    TWCR=(1<<TWINT)|(1<<TWEN)|(1<<TWSTO);
 	 
-	    //Ждем установки условия СТОП
+	    //Wait until CONTROL REGISTER has been updated
 	    while(TWCR & (1<<TWSTO));
 	 
-    //Возвращаем считанный байт
+    //And we return the byte we've read.
     return data;
 }
-
-
-
-
-
-
-
-
-
-
-
 
 
 
 bool eeWriteBytes(uint8_t *buffer, uint16_t address, uint16_t data_size)
 {
  //volatile uint8_t data_tmp; //Переменная, в которую запишем прочитанный байт
-/*****УСТАНАВЛИВАЕМ СВЯЗЬ С ВЕДОМЫМ********/
+/*****Establish a connection to memory********/
  
     do
     {
-//Инициализация Регистра управления шиной в Блоке управления
-/*Перед началом передачи данных необходимо сформировать т.н. условие начала. В состоянии покоя линии SCL и SDA находятся на высоком уровне. Ведущее устройство (Контроллер AVR в нашем примере), которое хочет начать передачу данных, изменяет состояние линии SDA к низкому уровню. Это и есть условие начала передачи данных.*/
+//Initialize the control-Register of the TWI-bus (TWCR)
+/*To start any data-transfer, it's required to create a so called 'start condition'. When at rest, the SCL and SDA lines of the bus are pulled HIGH. The master device (the AVR in our case) pulls the SDA line to LOW to indicate the start of a data-transfer.*/
  
 /*
-а)Сброс флага прерывания TWINT (Флаг TWINT сбрасывается программно путем записи в него логической 1) для разрешения начала новой передачи данных
-б)Уст. бит условия СТАРТ
-в)Уст. бит разрешения работы TWI
+а)reset the TWINT interrupt flag (write a '1' into it) to enable a new data-transfer
+b)Set 'Two Wire start' condition bit TWSTA
+c)Set 'Two Wire Enable' bit TWEN
 */
         TWCR=(1<<TWINT)|(1<<TWSTA)|(1<<TWEN);
  
-//Ждем, пока шина даст добро (возможно, линия пока еще занята, ждем)
-//TWINT бит устанавливается аппаратно, если TWI завершает текущее задание и ожидает реакции программы
+//Wait until register has been updated (the line may still be busy; so we we wait)
+//TWINT bit is set by hardware when TWI transfer completes.
         while(!(TWCR & (1<<TWINT)));
  
-        /*Проверяем регистр статуса, а точнее биты TWS3-7,
-        которые доступны только для чтения. Эти пять битов
-        отражают состояние шины. TWS2-0 «отсекаем» с помощью операции «И         0xF8». Если TWS7-3 = 0x08, то СТАРТ был успешным.*/
+        /*Now we check bits 3-7 of the status-register which are read-only
+        These bits reflect the state of the bus.
+        TWS2-0 are not read (by using "TWSR & 0xF8). If TWS7-3 = 0x08, then the TWI start was successful.*/
         if((TWSR & 0xF8) != TW_START)
            return false;
  
-/*К шине I2C может быть подключено множество подчиненных устройств (к примеру, много микросхем внешней памяти EEPROM). Для того, чтобы все микросхемы и контроллер знали, от кого и кому передается информация, в протоколе реализована Адресация ведомых устройств. В каждой микросхеме, предназначенной для работы с I2C, на заводе "зашит" определенный адрес. Мы этот адрес передаем по всей шине, т.е. всем ведомым. Каждый ведомый получает этот адрес и смотрит, типа мой это или чужой. Если мой, то О КРУТО, со мной хочет работать контроллер AVR. Так вот и происходит "рукопожатие" между ведущим и ведомым.*/
+/*The TWI (i2c) bus can have multiple slave devices connected. (for example, multiple external I2C EEPROMS). To be able to specify which chip to read from, the protocol
+implements an addressing-scheme. Each (slave) chip on the bus has it's own address that is set in the factory (but can sometimes be adjusted/altered by connecting certain pins to GND/VCC; check docs). To specify which slave we want to listen to our commands, we first send the address over the bus. All slaves listen to the bus but only one of them goes 'COOL! This is my address! I'd love to talk to you!' and will start a 'handshake' back to the master (AVR)*/
  
-/*Так вот, мы хотим работать с микросхемой памяти 24LC64, поэтому по шине нам надо передать ее адрес. Она узнает свой адрес, и будет знать, что данные на запись адресуются именно ей. А остальные микросхемы, если они есть, эти данные будут просто игнорировать.*/
+/*Now, we want to work with the EEPROM-memory chip 24LC64,so we need to send the address for this chip onto the bus. The chip will see the address and will know that the following data on the bus is addressed to it. The other slaves on the bus (if there are any) will simply ignore the data not meant for them.*/
  
-/*Постоянная часть адреса 24LC64 – 1010 (см. даташит на 24XX64), 3 бита - переменные (если вдруг мы захотим подключить несколько одинаковых микросхем c одинаковыми заводскими адресами, они пригодятся; в ином(нашем) случае выставляем нули), далее бит 0 - если хотим записывать в память или 1 - если читаем данные из памяти I2C EEPROM*/
+/*The 'fixed' part of the address for the is 24LC64 – 1010 (see datasheet for the 24XX64) and 3 'variable' bits. If we would like to connect multiple similar chips with the same 'fixed'-part, we can assign alternate addresses in this space. This is done by shorting certain pins on the EEPROM-chip to GND or VCC. After the fixed+variable bits comes an end-bit that indicates if you want to write (0) or want to read (1) from the i2c EEPROM*/
  
        //TWDR = 0b1010‘000‘0;
         TWDR = (slaveAddressConst<<4) + (slaveAddressVar<<1) + (WRITEFLAG);
 	 
-/*Говорим регистру управления, что мы хотим передать данные, содержащиеся в регистре данных TWDR*/
+/*Update the CONTROL REGISTER (TWCR) to tell the TWI-controller that we have set data ready in TWDR and want it sent onto the bus*/
         TWCR=(1<<TWINT)|(1<<TWEN);
 	 
-        //Ждем окончания передачи данных
+        //The TWCR register will have the TWINT bit set when it's done
         while(!(TWCR & (1<<TWINT)));
 	 
-	/*Если нет подтверждения от ведомого, делаем все по-новой (либо неполадки с линией, либо ведомого с таким адресом нет).
-	Если же подтверждение поступило, то регистр статуса установит биты в 0x18=TW_MT_SLA_ACK (в случае записи) или 0x40=TW_MR_SLA_ACK (в случае чтения).
-Грубо говоря, если TW_MT_SLA_ACK, то ведомый "говорит" нам, что его адрес как раз 1010’000 и он готов для записи (чтения, если TW_MR_SLA_ACK).*/
+	/*If there is no acknowledgement from the slave, we have to do it all over again. Perhaps there's a problem with the wires or
+	there is no slave on the bus with the right address.
+	If a confirmation (handshake) was received, the STATUS REGISTER would be set to 0x18=TW_MT_SLA_ACK (in the case of writing)
+	or 0x40=TW_MR_SLA_ACK (in the case of reading).
+	Roughly speaking, if we see TW_MT_SLA_ACK, it tells us that 1010’000 is the slave's address and it's ready for writing to (Or reading, if it's TW_MR_SLA_ACK).*/
     }while((TWSR & 0xF8) != TW_MT_SLA_ACK);
  
-/*Здесь можем уже уверенно говорить, что ведущий и ведомый друг друга видят и понимают. Вначале скажем нашей микросхеме памяти, по какому адресу мы хотим записать байт данных*/
+/*Here we can already say with confidence that both master and slave see eachother correctly and understand eachother. So now we can tell the memory-chip to which address inside of it's memory we want to write a byte of data*/
  
-/*****ПЕРЕДАЕМ АДРЕС ЗАПИСИ********/
+/*****Pass the WRITE address********/
 	 
-/*Записываем в регистр данных старший разряд адреса (адрес 16-битный, uint16_t))..*/
+/*Write the data in the register (MSB) (address 16-bits, uint16_t))..*/
     TWDR=(address>>8);
  
-    //..и передаем его
+    //..and send it
     TWCR=(1<<TWINT)|(1<<TWEN);
  
-    //ждем окончания передачи
+    //and wait for the transmission to complete...
     while(!(TWCR & (1<<TWINT)));
 	 
-/*Проверяем регистр статуса, принял ли ведомый данные. Если ведомый данные принял, то он передает "Подтверждение", устанавливая SDA в низкий уровень. Блок управления, в свою очередь, принимает подтверждение, и записывает в регистр статуса 0x28= TW_MT_DATA_ACK. В противном случае 0x30= TW_MT_DATA_NACK */
+/*Check the STATUS REGISTER to see if the slave took the data. If it received it all, it will send an ACKnowledgement by setting the SDA-line of the bus to LOW. The TWI-bus control-unit will see this and update the STATUS REGISTER. A good ACK is 0x28= TW_MT_DATA_ACK. If we get a NotAcknowledge: 0x30= TW_MT_DATA_NACK */
     if((TWSR & 0xF8) != TW_MT_DATA_ACK)
         return false;
 	 
-    //Далее тоже самое для младшего разряда адреса
+    //Then we do the same for the rest of the address; the LSB
     TWDR=(address);
     TWCR=(1<<TWINT)|(1<<TWEN);
     while(!(TWCR & (1<<TWINT)));
@@ -355,9 +344,9 @@ bool eeWriteBytes(uint8_t *buffer, uint16_t address, uint16_t data_size)
     if((TWSR & 0xF8) != TW_MT_DATA_ACK)
         return false;
  
-/*****ЗАПИСЫВАЕМ БАЙТЫ ДАННЫХ********/
+/*****Writing the data********/
 
-    //Аналогично, как и передавали адрес, передаем байты данных
+    //Just like we sent the address, we start sending bytes
 
 //sound_size = sizeof(pSnd);
 for(uint16_t iii=0; iii < data_size; iii++)
@@ -377,11 +366,11 @@ for(uint16_t iii=0; iii < data_size; iii++)
 	}
 
  
-    /*Устанавливаем условие завершения передачи данных (СТОП)
-    (Устанавливаем бит условия СТОП)*/
+    /*When we're done, we set the STOP condition
+    (set the TWSTO bit (STOP)*/
     TWCR=(1<<TWINT)|(1<<TWEN)|(1<<TWSTO);
  
-    //Ждем установки условия СТОП
+    //We wait until the CONTROL REGISTER has been updated
     while(TWCR & (1<<TWSTO));
  
     return true;
@@ -389,10 +378,10 @@ for(uint16_t iii=0; iii < data_size; iii++)
 
 bool eeReadBytes(uint8_t *buffer, uint16_t address, uint16_t data_size)
 	{
-//	    uint8_t data; //Переменная, в которую запишем прочитанный байт
+//	    uint8_t data; //variable we want the data to be be read into..
 	 
-	//Точно такой же кусок кода, как и в eeWriteByte...
-	/*****УСТАНАВЛИВАЕМ СВЯЗЬ С ВЕДОМЫМ********/
+	//The same piece of code as a eeWriteByte ...
+	/*****Establish a link with the EEPROM********/
 	    do
 	    {
 	        TWCR=(1<<TWINT)|(1<<TWSTA)|(1<<TWEN);
@@ -408,7 +397,7 @@ bool eeReadBytes(uint8_t *buffer, uint16_t address, uint16_t data_size)
 	 
 	    }while((TWSR & 0xF8) != TW_MT_SLA_ACK);
 	 
-	/*****ПЕРЕДАЕМ АДРЕС ЧТЕНИЯ********/
+	/*****pass the address to READ from********/
 	    TWDR=(address>>8);
 	    TWCR=(1<<TWINT)|(1<<TWEN);
 	    while(!(TWCR & (1<<TWINT)));
@@ -423,81 +412,81 @@ bool eeReadBytes(uint8_t *buffer, uint16_t address, uint16_t data_size)
 	    if((TWSR & 0xF8) != TW_MT_DATA_ACK)
 	        return false;
 	 
-	/*****ПЕРЕХОД В РЕЖИМ ЧТЕНИЯ********/
-	/*Необходимо опять «связаться» с ведомым, т.к. ранее мы отсылали адресный пакет (slaveAddressConst<<4) + (slaveAddressVar<<1) + WRITEFLAG, чтобы записать адрес чтения байта данных. А теперь нужно перейти в режим чтения (мы же хотим прочитать байт данных), для этого отсылаем новый пакет (slaveAddressConst<<4) + (slaveAddressVar<<1) + READFLAG.*/
+	/*****Switch to READ mode********/
+	/*This is required to 'contact' the slave. First we sent out the chip address (slaveAddressConst << 4) + (slaveAddressVar << 1) + WRITEFLAG to tell the chip which address we want to read a data-byte from. Now we switch to read (because we want to read that byte). This by writing '(slaveAddressConst << 4) + (slaveAddressVar << 1) + READFLAG to the bus.*/
 	 
-	    //Повтор условия начала передачи
+	    //We again initialize the bus with a 'repeated start condition'
 	    TWCR=(1<<TWINT)|(1<<TWSTA)|(1<<TWEN);
-	//ждем выполнения текущей операции
+	//... and wait for the operation to finish
 	    while(!(TWCR & (1<<TWINT)));
 	 
-	/*Проверяем статус. Условие повтора начала передачи (0x10=TW_REP_START) должно подтвердиться*/
+	/*We check the bus status; the 'repeated start condition' should be detected. (0x10 = TW_REP_START)*/
 	    if((TWSR & 0xF8) != TW_REP_START)
 	        return false;
 	 
-	    /*Записываем адрес ведомого (7 битов) и в конце бит чтения (1)*/
+	    /*Write the address (7bits) and the end-bit (1bit)*/
 	    //TWDR=0b1010’000’1;
 	    TWDR = (slaveAddressConst<<4) + (slaveAddressVar<<1) + READFLAG;        
 	 
-	//Отправляем..
+	//Send...
 	    TWCR=(1<<TWINT)|(1<<TWEN);
 	    while(!(TWCR & (1<<TWINT)));
 	 
-	/*Проверяем, нашелся ли ведомый с адресом 1010’000 и готов ли он работать на чтение*/
+	/*Check to see if a device was detected at address 0b1010'000 and if it's ready to read from*/
 	    if((TWSR & 0xF8) != TW_MR_SLA_ACK)
 	        return false;
 	 
-	/*****СЧИТЫВАЕМ БАЙТ ДАННЫХ********/
-	 for(uint16_t i=0; i < (data_size - 1); i++)//считаем все байты, кроме последнего
+	/*****Read multple bytes of data********/
+	 for(uint16_t i=0; i < (data_size - 1); i++)//Read all except the last byte
 	{
 
-	/*Начинаем прием данных с помощью очистки флага прерывания TWINT. Читаемый байт записывается в регистр TWDR.*/
+	/*Start data-reception by clearing the interrupt flag TWINT. TWDR will contain the byte that is read.*/
 	    TWCR=(1<<TWINT)|(1<<TWEN)|(1<<TWEA);
 	 
-	    //Ждем окончания приема..
+	    //We wait until CONTROL REGISTER has been updated
 	    while(!(TWCR & (1<<TWINT)));
 	 
-	/*Проверяем статус. По протоколу, прием данных должен оканчиваться без подтверждения со стороны ведущего (TW_MR_DATA_NACK = 0x58)*/
+	/*We check the bus status; according to specs, the status-register (TWSR) should indicate a NACK from the master (TW_MR_DATA_NACK = 0x58)*/
 	    if((TWSR & 0xF8) != TW_MR_DATA_ACK)
 	        return false;
 	 
-	    /*Присваиваем переменной data значение, считанное в регистр данных TWDR*/
+	    /*We read the data from TWDR and add it to our buffer*/
 	    
 		*buffer = TWDR;
 		buffer++;
 		//data=TWDR;
 	}
 
-	 /*Начинаем прием данных с помощью очистки флага прерывания TWINT. Читаемый байт записывается в регистр TWDR.*/
+	 /*Start data reception by clearing the interrupt-flag TWINT. The byte read from EEPROM will be put into TWDR*/
 	    TWCR=(1<<TWINT)|(1<<TWEN);
 	 
-	    //Ждем окончания приема..
+	    //We wait until the CONTROL REGISTER has been updated
 	    while(!(TWCR & (1<<TWINT)));
 	 
-	/*Проверяем статус. По протоколу, прием данных должен оканчиваться без подтверждения со стороны ведущего (TW_MR_DATA_NACK = 0x58)*/
+	/*Check status. According to the protocol, data reception must end without confirmation from the master (TW_MR_DATA_NACK = 0x58) */
 	    if((TWSR & 0xF8) != TW_MR_DATA_NACK)
 	        return false;
 	 
-	    /*Присваиваем переменной data значение, считанное в регистр данных TWDR*/
+	    /*REad the next byte and add it to the buffer.*/
 	    
 		*buffer = TWDR;
 
 
-	    /*Устанавливаем условие завершения передачи данных (СТОП)*/
+	    /*Set the STOP condition on the bus (update CONTROL REGISTER with TWSTO)*/
 	    TWCR=(1<<TWINT)|(1<<TWEN)|(1<<TWSTO);
 	 
-	    //Ждем установки условия СТОП
+	    //... and wait until it's set.
 	    while(TWCR & (1<<TWSTO));
 	 
-    //Возвращаем считанный байт
+    //And we exit; with the data written to the address that *buffer pointed to
     return true;
 }
 
 
 
 bool open_eeprom( uint16_t address){
-	//Точно такой же кусок кода, как и в eeWriteByte...
-	/*****УСТАНАВЛИВАЕМ СВЯЗЬ С ВЕДОМЫМ********/
+	//The same piece of code as in eeWriteByte...
+	/*****Establish a connection to the EEPROM********/
 	    do
 	    {
 	        TWCR=(1<<TWINT)|(1<<TWSTA)|(1<<TWEN);
@@ -513,7 +502,7 @@ bool open_eeprom( uint16_t address){
 	 
 	    }while((TWSR & 0xF8) != TW_MT_SLA_ACK);
 	 
-	/*****ПЕРЕДАЕМ АДРЕС ЧТЕНИЯ********/
+	/*****pass the ADDRESS of the device********/
 	    TWDR=(address>>8);
 	    TWCR=(1<<TWINT)|(1<<TWEN);
 	    while(!(TWCR & (1<<TWINT)));
@@ -528,27 +517,27 @@ bool open_eeprom( uint16_t address){
 	    if((TWSR & 0xF8) != TW_MT_DATA_ACK)
 	        return false;
 	 
-	/*****ПЕРЕХОД В РЕЖИМ ЧТЕНИЯ********/
-	/*Необходимо опять «связаться» с ведомым, т.к. ранее мы отсылали адресный пакет (slaveAddressConst<<4) + (slaveAddressVar<<1) + WRITEFLAG, чтобы записать адрес чтения байта данных. А теперь нужно перейти в режим чтения (мы же хотим прочитать байт данных), для этого отсылаем новый пакет (slaveAddressConst<<4) + (slaveAddressVar<<1) + READFLAG.*/
+	/*****Switch to READ mode********/
+	/*This is required to 'contact' the slave. First we sent out the chip address (slaveAddressConst << 4) + (slaveAddressVar << 1) + WRITEFLAG to tell the chip which address we want to read a data-byte from. Now we switch to read (because we want to read that byte). This by writing '(slaveAddressConst << 4) + (slaveAddressVar << 1) + READFLAG to the bus.*/
 	 
-	    //Повтор условия начала передачи
+	    //We again initialize the bus with a 'repeated start condition'
 	    TWCR=(1<<TWINT)|(1<<TWSTA)|(1<<TWEN);
-	//ждем выполнения текущей операции
+	//... and wait for the operation to finish
 	    while(!(TWCR & (1<<TWINT)));
 	 
-	/*Проверяем статус. Условие повтора начала передачи (0x10=TW_REP_START) должно подтвердиться*/
+	/*We check the bus status; the 'repeated start condition' should be detected. (0x10 = TW_REP_START)*/
 	    if((TWSR & 0xF8) != TW_REP_START)
 	        return false;
 	 
-	    /*Записываем адрес ведомого (7 битов) и в конце бит чтения (1)*/
+	    /*Write the address (7bits) and the end-bit (1bit)*/
 	    //TWDR=0b1010’000’1;
 	    TWDR = (slaveAddressConst<<4) + (slaveAddressVar<<1) + READFLAG;        
 	 
-	//Отправляем..
+	//Send...
 	    TWCR=(1<<TWINT)|(1<<TWEN);
 	    while(!(TWCR & (1<<TWINT)));
 	 
-	/*Проверяем, нашелся ли ведомый с адресом 1010’000 и готов ли он работать на чтение*/
+	/*Check to see if a device was detected at address 0b1010'000 and if it's ready to read from*/
 	    if((TWSR & 0xF8) != TW_MR_SLA_ACK)
 	        return false;
 		return true;
@@ -557,17 +546,17 @@ bool open_eeprom( uint16_t address){
 
 
 bool read_eeprom_byte(uint8_t *data){
-/*Начинаем прием данных с помощью очистки флага прерывания TWINT. Читаемый байт записывается в регистр TWDR.*/
+/*Start reception of data by clearing the interrupt flag TWINT in the CONTROL REGISTER. The returned byte will be put into TWDR*/
 	    TWCR=(1<<TWINT)|(1<<TWEN)|(1<<TWEA);
 	 
-	    //Ждем окончания приема..
+	    //Wait for the CONTROL REGISTER to finish updating
 	    while(!(TWCR & (1<<TWINT)));
 	 
-	/*Проверяем статус. По протоколу, прием данных должен оканчиваться без подтверждения со стороны ведущего (TW_MR_DATA_NACK = 0x58)*/
+	/*We check the bus status; according to specs, the status-register (TWSR) should indicate a NACK from the master (TW_MR_DATA_NACK = 0x58)*/
 	    if((TWSR & 0xF8) != TW_MR_DATA_ACK)
 	        return false;
 	 
-	    /*Присваиваем переменной data значение, считанное в регистр данных TWDR*/
+	    /*Take the byte out of the i2c data-register (TWDR) and put it in the address that *data points to*/
 	    
 		*data = TWDR;
 		return true;
@@ -577,28 +566,28 @@ bool read_eeprom_byte(uint8_t *data){
 }
 
 bool close_eeprom(uint8_t *data){
-/*Начинаем прием данных с помощью очистки флага прерывания TWINT. Читаемый байт записывается в регистр TWDR.*/
+/*We want to close the EEPROM. To do so we need to initliaze data-transfer by clearing the interrupt flag. We do this by setting the TWINT and TWEN flags in the CONTROL REGISTER*/
 	    TWCR=(1<<TWINT)|(1<<TWEN);
 	 
-	    //Ждем окончания приема..
+	    //... and we wait for the CONTROL REGISTER to have been updated
 	    while(!(TWCR & (1<<TWINT)));
 	 
-	/*Проверяем статус. По протоколу, прием данных должен оканчиваться без подтверждения со стороны ведущего (TW_MR_DATA_NACK = 0x58)*/
+	/*We check the bus status; according to specs, the status-register (TWSR) should indicate a NACK from the master (TW_MR_DATA_NACK = 0x58)*/
 	    if((TWSR & 0xF8) != TW_MR_DATA_NACK)
 	        return false;
 	 
-	    /*Присваиваем переменной data значение, считанное в регистр данных TWDR*/
+	    /*Take the byte out of the i2c data-register (TWDR) and put it in the address that *data points to*/
 	    
 		*data = TWDR;
 
 
-	    /*Устанавливаем условие завершения передачи данных (СТОП)*/
+	    /*Update the STATUS REGISTER to set a STOP-bit (TWSTO)*/
 	    TWCR=(1<<TWINT)|(1<<TWEN)|(1<<TWSTO);
 	 
-	    //Ждем установки условия СТОП
+	    //and wait for the CONTROL REGISTER to have been updated
 	    while(TWCR & (1<<TWSTO));
 	 
-    //Возвращаем считанный байт
+    //Here we return with the data put in the address *data
     return true;
 }
 

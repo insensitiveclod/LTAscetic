@@ -12,12 +12,11 @@ configuring_ports();
 
 init_timer2();
 init_int0();
-init_tm();	//инициализируем считыватель тачмемори
+init_tm();		//Initialize touch-memory reader
 init_timer1();
 init_timer0();
 
-init_var();                		//Задаём значения переменным
-
+init_var();		//set variables
 init_lcd(); 
 lcd_clrscr();
 init_joystick();
@@ -140,8 +139,8 @@ while (timer2 < 1000);
 display_life(life);
 beep(1000, 3, 128);
 
-USART_SendStr("Hello!\n\r");
-USART_SendStr("Привет!\n\r");
+USART_SendStr("Hello!\n\r"); // For english
+USART_SendStr("РџСЂРёРІРµС‚!\n\r"); // and russians
 USART_SendStrP(command_0);
 USART_SendStrP(command_1);
 
@@ -149,7 +148,7 @@ USART_SendStrP(command_1);
 /*
 play_shot_sound();
 while(1){
-if(update_suond_buffer_now)
+if(update_suond_buffer_now)  // FIXME: typo here ;)
 	{
 		sound_buffer_update();
 	}
@@ -200,13 +199,13 @@ if (simples_in_queue==0) display_voltage_update();
 if (chit_detected)
 	{
 		lcd_clrscr();
-		lcd_puts("Ошибка датчиков,");
+		lcd_puts("РћС€РёР±РєР° РґР°С‚С‡РёРєРѕРІ,"); // "error sensors"
 		lcd_gotoxy(0, 1);
-		lcd_puts("Проверь повязку!");
+		lcd_puts("РџСЂРѕРІРµСЂСЊ РїРѕРІСЏР·РєСѓ!"); //check the bandana
 		while (chit_detected)
 		{
 			beep(1000, 3, 128);
-			beep(500, 3, 128); //Воспроизводим звук (частота, длительность, громкость)
+			beep(500, 3, 128); //play sound (frequency, duration, loudness)
 		};
 		keyboard_event=no_key_pressing;
 		reload_key_event=no_key_pressing;
@@ -221,25 +220,25 @@ switch(keyboard_event)
 		{
 			if (bullets > 0)
 			{
-				bullets--;//уменьшаем на 1 количество патронов		
-				//last_simple = 0;//воспроизводим звук выстрела
+				bullets--;		//take one bullet	
+				//last_simple = 0;	//play 'SHOT' sound
 				
-				if (simples_in_queue>1) //если звук выстрла воспроизводится
+				if (simples_in_queue>1)		//If there are bytes left in sample queue
 				{
-					simples_in_queue=1;//закроем eeprom
-					while (eeprom_is_open);//дождемся, пока eerom закроется
+					simples_in_queue=1;	//close EEPROM
+					while (eeprom_is_open);	//and wait for EEPROM to really be closed before we continue
 				}
 				 
 				simples_in_queue = eeprom_read_word(&sound_1_size);
 				
 				
-				send_ir_package();		//Производим "выстрел"
+				send_ir_package();		//produce a 'SHOT' packet
 			//	display_bullets_update();
 				
 	 		}
 			else
 			{
-				if (simples_in_queue==0) //если звук выстрла не воспроизводится
+				if (simples_in_queue==0) 	//if there are no bytes left in the sample queue
 				{
 					play_sound_5();
 				}
@@ -258,10 +257,10 @@ switch(reload_key_event)
 	 	case no_key_pressing: break;
 		case key_pressing:
 		{
-			if ((clips > 0)&&(simples_in_queue==0))//если обоймы не кончилсь и не воспроизводиться звук выстрела
+			if ((clips > 0)&&(simples_in_queue==0))//If we still have clips left, and not playing SHOT sound...
 			{
 				playclipinsound();
-				clips--;//уменьшаем на 1 количество патронов
+				clips--;		//we take a clip
 				bullets = eeprom_read_byte(&eeprom_bullets_in_clip);
 				display_clips_update();
 				display_bullets_update();
@@ -272,8 +271,8 @@ switch(reload_key_event)
 				//while (timer1 < 10000);
 				playclipoutsound();
 				BULLETS_OUT_LED_OFF;
-		//		last_simple = 0;//воспроизводим звук выстрела
-		//		send_ir_package();		//Производим "выстрел"
+		//		last_simple = 0;		//play a 'SHOT' sound
+		//		send_ir_package();		//send a 'SHOT' packet
 				
 	 		}
 			reload_key_event=no_key_pressing; 
@@ -286,20 +285,20 @@ switch(reload_key_event)
 
 
 	{
-		switch(rx_event)//выясним, какое именно событие произошло
+		switch(rx_event)	//Find out what event we received from the IR-receiver
 					{
-						case RX_COMPLETE: 	//получен пакет
+						case RX_COMPLETE: 	//Packet received completely
 						{
 						//	cli();
 						/*********************************************************
-							WOUND_LED_ON; //включаем вспомогательный светодиод
+							WOUND_LED_ON; //turn on the auxiliary LED
 							timer1=0;
 							while(timer1 < 35000);
-							WOUND_LED_OFF;	//выключаем вспомогательный светодиод
+							WOUND_LED_OFF;	//turn off auxiliary LED
 						************************************************************/
 							
 							rx_event = NOT_EVENT;	
-							if(!get_buffer_bit(0)) //если этот бит равен 0, то это пакет с данными (выстрел)
+							if(!get_buffer_bit(0)) //if bit is set to '0', this is packet of data.
 							{
 						
 								
@@ -308,9 +307,9 @@ switch(reload_key_event)
 //								volatile int gg;
 //								gg++;
 
-								if ((rx_packet.team_id != team_id())||(eeprom_read_byte(&friendly_fire_enable)&&(rx_packet.player_id != eeprom_read_byte(&eeprom_player_id))))//"пуля" прилетела от игрока другой, не нашей, команды
+								if ((rx_packet.team_id != team_id())||(eeprom_read_byte(&friendly_fire_enable)&&(rx_packet.player_id != eeprom_read_byte(&eeprom_player_id))))//'BULLET' received from player not in our own team
 								{
-									WOUND_LED_ON; //включаем вспомогательный светодиод						
+									WOUND_LED_ON; // Turn on axiliary LED
 									lcd_bl_on();
 									display_hit_data();
 									playhitsound();
@@ -322,27 +321,27 @@ switch(reload_key_event)
 
 
 								if (life_in_percent > rx_packet.damage) 
-									{
+									{ // We got wounded, but still live..
 										life_in_percent = life_in_percent-rx_packet.damage;
 										life = (life_in_percent*10)/125;
 										if ((life==0)&&(life_in_percent>0)) life=1;
 
 									}
 									else 
-									{	
+									{ //.. or we received too much damaga and are dead.
 										life = 0;
 										life_in_percent=0;
 										WOUND_LED_ON;
-										display_life(life);//отобразим уровень жизни на диодах
-										display_life_update();//отобразим уровень жизни на ЖКИ
-										volatile uint8_t keypress_cntr; //счетчик циклов, в течении которых курок был нажат
+										display_life(life);	// display HEALTH state with LEDs
+										display_life_update();	// Display HEALTH state with LCD
+										volatile uint8_t keypress_cntr; // loop-counter for checking trigger-press duration
 										keypress_cntr = 0;
 										
 										
 										
 										if ((eeprom_read_byte(&eeprom_tm_serial_num.device_code)!=0)&&(eeprom_read_byte(&eeprom_tm_serial_num.device_code)!=0xFF))
 
-										/*если ТМ ключ уже занесён в память*/
+										/*If the Touch-Memory info is already in the EEPROM memory*/
 										{
 
 											joystick_event=no_pressing;
@@ -357,9 +356,9 @@ switch(reload_key_event)
 											{//[while]
 												lcd_clrscr();
 												lcd_home();
-												lcd_puts("Для активации");
+												lcd_puts("Р”Р»СЏ Р°РєС‚РёРІР°С†РёРё"); // "to activate"
 												lcd_gotoxy(0, 1);
-												lcd_puts("приложите ключ");
+												lcd_puts("РїСЂРёР»РѕР¶РёС‚Рµ РєР»СЋС‡"); // "attach key"
 												while (tm_event == no_tm_event)
 												{
 													WOUND_LED_INVERT;
@@ -379,7 +378,7 @@ switch(reload_key_event)
 													{
 														lcd_clrscr();
 														lcd_home();
-														lcd_puts("Ошибка CRC");
+														lcd_puts("РћС€РёР±РєР° CRC"); // "CRC error"
 														timer2 = 0;
 														while (timer2 < 6000){};
 														tm_event=no_tm_event;
@@ -393,7 +392,7 @@ switch(reload_key_event)
 														{ 	tm_valide=1;
 															lcd_clrscr();
 															lcd_home();
-															lcd_puts("Удачи!");
+															lcd_puts("РЈРґР°С‡Рё!"); // "Good luck!"
 															timer2 = 0;
 															while (timer2 < 6000){};
 				
@@ -402,15 +401,15 @@ switch(reload_key_event)
 														}	
 														lcd_clrscr();
 														lcd_home();
-														lcd_puts("Не тот ключ");
+														lcd_puts("РќРµ С‚РѕС‚ РєР»СЋС‡"); // "Not the key" (FIXME?)
 														timer2 = 0;
 														while (timer2 < 6000){};
 													/*
 														lcd_clrscr();
 														lcd_home();
-														lcd_puts("Для активации");
+														lcd_puts("Р”Р»СЏ Р°РєС‚РёРІР°С†РёРё"); // "to activate"
 														lcd_gotoxy(0, 1);
-														lcd_puts("приложи ключ");
+														lcd_puts("РїСЂРёР»РѕР¶Рё РєР»СЋС‡"); // "apply your key"
 													*/
 														tm_event=no_tm_event;
 														
@@ -434,7 +433,7 @@ switch(reload_key_event)
 											WOUND_LED_INVERT;
 											timer2 = 0;
 											while (timer2 < 1000);
-											switch (FIRE_KEY_IN&FIRE_KEY_PIN) //проверяем, нажат ли курок
+											switch (FIRE_KEY_IN&FIRE_KEY_PIN) //Check to see if 'FIRE' trigger is being pulled
 											{
 												case 0:  keypress_cntr++ ; break;
 												case FIRE_KEY_PIN: keypress_cntr = 0; break;
@@ -447,15 +446,15 @@ switch(reload_key_event)
 										
 										
 										WOUND_LED_OFF;
-										init_var();//"оживаем" - начинаем новую игру
+										init_var();	//"spawn" - start a new game
 										joystick_event=no_pressing;
 										keyboard_event=no_key_pressing;
 										tm_event=no_tm_event;
 									//	display_status();
 									}
 								
-								display_life(life);//отобразим уровень жизни на диодах
-//								display_life_update();//отобразим уровень жизни на ЖКИ
+								display_life(life);		//display HEALTH using LEDs
+//								display_life_update();		//display HEALTH on LCD (FIXME: is this commented out for a reason ?)
 								lcd_bl_off();
 								display_status();
 								}
@@ -478,7 +477,7 @@ switch(reload_key_event)
 							break;
 						}
 						
-						case RX_ERROR:		//ошибка приема
+						case RX_ERROR:		//reception error
 						{
 						//	cli();
 							BULLETS_OUT_LED_ON;
@@ -490,7 +489,7 @@ switch(reload_key_event)
 							break;
 						}
 						
-						case NOT_EVENT:		//ошибка приема
+						case NOT_EVENT:		//reception error
 						{
 						//	cli();
 						//	rx_event = NOT_EVENT;	
@@ -506,8 +505,8 @@ switch(reload_key_event)
 
 	}
 
-//	timer1=0;				//Сделаем паузу
-//	while(timer1 < 65000);	//Подождем, пока не произойдет 65000 прерываний таймера (чуть меньше секунды)
+//	timer1=0;				//pause
+//	while(timer1 < 65000);			//wait until 65000 timer interrupts has passed (a little less than a second)
 
 	switch(joystick_event)
 	{
@@ -547,8 +546,8 @@ switch(reload_key_event)
 //			if ((result)<max_value) result++;
 //			lcd_gotoxy(0, 1);
 //			lcd_puts(int_to_str(pgm_read_byte(arr_adress+result),3));
-			//lcd_puts("Нажата кнопка \n");
-			//lcd_puts("Вправо");
+			//lcd_puts("РќР°Р¶Р°С‚Р° РєРЅРѕРїРєР° \n");
+			//lcd_puts("Р’РїСЂР°РІРѕ");
 			joystick_event = no_pressing;
 			}
 		break;
@@ -567,8 +566,8 @@ switch(reload_key_event)
 			//lcd_clrscr();
 			//lcd_gotoxy(0, 0);
 //			if ((result)>0) result--;
-			//lcd_puts("Нажата кнопка \n");
-			//lcd_puts("Влево");
+			//lcd_puts("РќР°Р¶Р°С‚Р° РєРЅРѕРїРєР° \n");
+			//lcd_puts("Р’Р»РµРІРѕ");
 //			lcd_gotoxy(0, 1);
 //			lcd_puts(int_to_str(pgm_read_byte(arr_adress+result),3));
 			joystick_event = no_pressing;
@@ -591,7 +590,7 @@ switch(reload_key_event)
 		}
 
 	};
-return 0;
+    return 0;
 
 }
 
@@ -599,18 +598,18 @@ return 0;
 
 
 void configuring_ports(){
-//IR_LED_DDR |= IR_LED_PIN; //ножку, на которой подключен ИК диот переводим в режим "выход"
-FIRE_LED_DDR |= FIRE_LED_PIN; //ножку, на которой подключен ИК диот переводим в режим "выход"
+//IR_LED_DDR |= IR_LED_PIN; 	//pin connected to IR-LED 'exit' (FIXME: anode/cathode ? )
+FIRE_LED_DDR |= FIRE_LED_PIN; 	//pin connected to FIRE-LED 'exit' (FIXME: anode/cathode ? )
 
-IR_LED_HIGH_POWER_DDR|=IR_LED_HIGH_POWER_PIN;//ножку, на которой подключен ИК диот переводим в режим "выход"
+IR_LED_HIGH_POWER_DDR|=IR_LED_HIGH_POWER_PIN;	//pin connected to IR-LED 'exit' (FIXME: 'what is 'exit' in this context ?)
 IR_LED_HIGH_POWER_OFF;
-IR_LED_LOW_POWER_DDR|=IR_LED_LOW_POWER_PIN;//ножку, на которой подключен ИК диот переводим в режим "выход"
+IR_LED_LOW_POWER_DDR|=IR_LED_LOW_POWER_PIN;	//pin connected to IR-LED 'exit' (FIXME: same as above...)
 IR_LED_LOW_POWER_OFF;
 /*
-LIFE_LEDS_DDR |= LIFE_LED1_PIN  //ножки, на которых
-				| LIFE_LED2_PIN //подключены светодиоды,
-				| LIFE_LED3_PIN //отображающие уровень "жизни"
-				| LIFE_LED4_PIN;//тоже настраиваем как выходы
+LIFE_LEDS_DDR |= LIFE_LED1_PIN  		// Here we set up
+				| LIFE_LED2_PIN // the outputs used
+				| LIFE_LED3_PIN // for driving the
+				| LIFE_LED4_PIN;// 'HEALTH' (life left) LEDS
 
 */
 
@@ -621,20 +620,20 @@ LIFE_LED3_DDR |= LIFE_LED3_PIN;
 LIFE_LED4_DDR |= LIFE_LED4_PIN;
 
 
-SOUND_DDR |= SOUND_PIN; //настраиваем выход ШИМ (АЦП)
-SOUND_CONTROL_DDR|= SOUND_CONTROL_PIN;//настраиваем вывод, контролирующий усилитель, как "выход" 
-SOUND_ON;//включаем усилитель
+SOUND_DDR |= SOUND_PIN; 			//Set up PWM-output (ADC)... (FIXME: shouldnt this be 'DAC ?)
+SOUND_CONTROL_DDR|= SOUND_CONTROL_PIN;		//Set up pin that controls amplifier enable.
+SOUND_ON;					//turn on amplifier
 
 BULLETS_OUT_LED_DDR|=BULLETS_OUT_LED_PIN;
-//DDRA |= (1 << 4)|(1<<5)|(1<<6)|(1<<7); // Устанавливаем порт PORTA.1 как выход                                                                                                                                                                    DDRB = 1<<DDB3;						//PB3 (OC0) set as output
-//DDRD |= (1 << 7);//светодиод на повязке
-DDRB |= (1 << 2);// отключение усилителя
+//DDRA |= (1 << 4)|(1<<5)|(1<<6)|(1<<7); 	// Prepare PORTA.1 as output РІС‹С…РѕРґ                                                                                                                                                                    DDRB = 1<<DDB3;					//PB3 (OC0) set as output
+//DDRD |= (1 << 7);				//LED-lights on the dressing (FIXME: bandage ? Bandana ?)
+DDRB |= (1 << 2);				//disable the amplifier
 PORTB &=~(1 << 2);
-//PORTD &= ~(1 << 7);//выключаем светодиод на повязке
+//PORTD &= ~(1 << 7);				//Turn off LED on the dressing (FIXME: bandage ? bandana ?)
 WOUND_LED_DDR |= WOUND_LED_PIN;
-TSOP_DDR &=~TSOP_PIN; //вывод, к которому подключен ИК-датчик настраиваем как "вход"
-RELOAD_KEY_DDR &=~RELOAD_KEY_PIN; //вывод, на котором сидит кнопка "перезарядка" как "вход"
-RELOAD_KEY_PORT |= RELOAD_KEY_PIN;//включаем подтягивающий резистор
+TSOP_DDR &=~TSOP_PIN; 				//pin connected to IR-RECEIVER is configured as input
+RELOAD_KEY_DDR &=~RELOAD_KEY_PIN; 		//pin connected to 'RELOAD KEY' is configured as input
+RELOAD_KEY_PORT |= RELOAD_KEY_PIN;		//enable PULL-UP resistor on 'RELOAD-KEY' pin
 
 FIRE_KEY_DDR&=~FIRE_KEY_PIN;
 FIRE_KEY_PORT|=FIRE_KEY_PIN;
@@ -648,19 +647,19 @@ ADC_PORT&=~ADC_PIN;
 
 
 /**************************************************************************************
-* Функция выполняет настройку таймера timer2
-* Режим работы таймер - СТС (сброс при совпадении)
-* тактирование - без делителя, с частотой кварца
-* регист сравнения будет иметь такое значение, чтобы прерывания
-* генерировались с удвоенной частотой несущей ИК-приемника 
+* Enabling and configuring TIMER2
+* Set Timer-mode to CTC (Clear Timer on Compare)
+* Clock - No divider of quartz frequency
+* detection of comparision is important to interrupt
+* generated at twice the IR-receiver frequency (FIXME: not at all sure about this translation)
 ***************************************************************************************/
 
 
 void init_timer2(void){
-OCR2 = F_CPU/IR_F0/2-1;       //Прерывания будут генерироваться с частотой, вдвое большей, чем частота несущей 
-TCCR2 = _BV(CS20)|_BV(WGM21); // Режим работы таймер - СТС (сброс при совпадении)
-                              // Тактирование с частотой резонатора (7 372 800 Гц)
-//TIMSK |= _BV(OCIE2);          // Разрешаем прерывания по захвату/сравнению
+OCR2 = F_CPU/IR_F0/2-1;		// Interrupts are generated at twice the frequency of IR-carrier
+TCCR2 = _BV(CS20)|_BV(WGM21);	// Set timer-mode to CTC (Clear Timer on Compare)
+                              	// Clock frequency of resonator (7.372.800 hz)
+//TIMSK |= _BV(OCIE2);          // enable capture/compare interrupt
 TIMSK &=~_BV(OCIE2);  
 }
 
@@ -668,23 +667,23 @@ TIMSK &=~_BV(OCIE2);
 
 
 /**************************************************************************************
-* Функция выполняет настройку внешних прерываний вывода INT0
+* This function sets up the INT0 handler for processing external inputs
 ***************************************************************************************/
 void init_int0(void){
-DDRD &=~(1<<2); 				//Настраиваем вывод INT0 как вход
-MCUCR |=_BV(ISC01);				//Прерывания будут генерироваться 
-MCUCR &=~_BV(ISC00);			//по спаду импульса
-GICR |=_BV(INT0); 				//Разрешаем внешние прерывания на INT0
+DDRD &=~(1<<2); 				// Set pin to trigger INT0
+MCUCR |=_BV(ISC01);				// enable triggering of INT0
+MCUCR &=~_BV(ISC00);				// only on HIGH->LOW transition of signal
+GICR |=_BV(INT0); 				// enable external triggering of INT0
 
 }
 
 
 
-void set_buffer_bit(uint8_t index, bool value){	//Задаем значение биту в буфере ИК-приемника
+void set_buffer_bit(uint8_t index, bool value){	//set value of bit in IR-receive buffer
 uint8_t byte_index;
 uint8_t bit_index;
-byte_index = index/8; //Определяем, в каком байте нахадится нужный бит
-bit_index = index - (byte_index*8);//Определяем номер бита в байте
+byte_index = index/8; 				//Determine which byte contains the bit being set
+bit_index = index - (byte_index*8);		//calculate which bit within that byte
 if(value) 
 		{
 			rx_buffer[byte_index] |= (1<<(7-bit_index));
@@ -701,13 +700,13 @@ else	{
 
 /*
 
-inline trx_packet get_packet_value(){ //Считываем данные из полученного пакета
+inline trx_packet get_packet_value(){ 		//Read data from received packet
 trx_packet result;
 uint8_t byte_tmp;
 
 result.player_id = rx_buffer[0];
 byte_tmp = rx_buffer[1];
-byte_tmp = byte_tmp << 2; //избавляемся от бит цвета команды
+byte_tmp = byte_tmp << 2; 			//get rid of bit of color commands (FIXME: refers to Team-ID ?)
 byte_tmp = byte_tmp >> 4;
 result.damage = pgm_read_byte(&(damage_value[byte_tmp]));
 result.team_id = rx_buffer[1]>>6;
@@ -720,344 +719,318 @@ return result;
 
 
 /**************************************************************************************
-* Функця производит "выстрел"
-* устанавлвает курсор на позицию начала блока данных data_packet.data[0]
-* и разрешает передачу данных
-* функция возвращает управление  только после отправки всех данных 
+* This function produces a 'SHOT' packet
+* We reset the cursor-position to be beginning of the data (data_packet.data[0])
+* And then we enable the transmitter and send out the data
+* Function only returns when all data has been sent(!) (FIXME: not true anymore ? Looks to be INT-based now?)
 ***************************************************************************************/
 
 
-void send_ir_package(void){ //Отправляем пакет ("стреляем")
+void send_ir_package(void){ 	// Send a 'SHOT' packet
 //ir_pulse_counter=IR_START;
-cursor_position = 0; 		//Курсор - на начало блока данных
-ir_transmitter_on = true;	//Разрешаем передачу
-TIMSK |= _BV(OCIE2);          // Разрешаем прерывания по захвату/сравнению
+cursor_position = 0; 		// Set pointer to beginning of datablock
+ir_transmitter_on = true;	// Enable IR-transmission
+TIMSK |= _BV(OCIE2);		// Set up interrupted on capture/compare
 FIRE_LED_ON;
 
 
-//while (ir_transmitter_on);	//Ждем, пока пакет отправиться
+//while (ir_transmitter_on);	//Wait for the packet to complete sending
 }
 
 /**************************************************************************************
-* Установка идентификатора игрока
-* в качестве аргумента функции указывается идентификационный номер игрока (от 1 до 127)
-* в результате выполнения функции в глобальной переменной data_packet.player_id
-* будут соответствующим образом инициированы  data_packet.player_id.(bit_0 ... bit_7) 
+* Set player identity
+* Takes ID as argument for player_id (1-127)
+* Manipulates global variable data_packet.player_id
+* Constructs properly initialized data_packet.player_id(bit_0...bit_7)
 ***************************************************************************************/
 void set_player_id(uint8_t ID){
 
-uint16_t *p_id_bit; 							//указатель на биты структуры player_id
-p_id_bit = &data_packet.packet.player_id.bit_6; 	//указывает на 6 "бит" структуры 
-for (int i=0; i < 7; i++) { 				//надо узнать значения 7 младших бит ID
-ID = ID << 1; 								//сдвигаем влево на один бит
-if (ID&(1<<7)) 								//если старший бит = 1
+uint16_t *p_id_bit; 							//pointer to the bits of the structure player_id
+p_id_bit = &data_packet.packet.player_id.bit_6; 			//points to bit 6 of the structure
+for (int i=0; i < 7; i++) { 						//Extract the values of the lower 6 bits of the ID parameter
+ID = ID << 1; 								//shift left by one bit
+if (ID&(1<<7)) 								//if MSB=1
 	{
-		*p_id_bit++ = IR_ONE; 				//присваиваем соответствующее значение  data_packet.player_id.bit_x
+		*p_id_bit++ = IR_ONE; 					//assign 'IR_ONE' value to data_packet.player_id.bit_x
 	}
 else 
 	{
-		*p_id_bit++ = IR_ZERO; 
+		*p_id_bit++ = IR_ZERO; 					//assign 'IR_ZERO' value to data_packet.player_id.bit_x
 	}
 
 }
 
-data_packet.packet.player_id.bit_7 = IR_ZERO; //согласно протоколу, этот "бит" должен быть равен 0 
+data_packet.packet.player_id.bit_7 = IR_ZERO; 				//According to protocol, this bit is always 'IR_ZERO'
 
 }
 
 
 
 /**************************************************************************************
-* Установка идентификатора (цвета) команды
-* в качестве аргумента функции указывается идентификационный номер (цвет) команды (от 0 до 3)
-* в результате выполнения функции в глобальной переменной data_packet.team_id
-* будут соответствующим образом инициированы  data_packet.team_id.(bit_0 и bit_1) 
+* Set the team identifier (color)
+* Takes argument 'color' (0-3)
+* Manipulates global variable data_packet.team_id
+* Constructs properly initialized data_packet.team_id (bit_0 and bit_1)
 ***************************************************************************************/
 
 
 
 void set_team_color(tteam_color  color){
-switch(color){
+	switch(color){
 
-		case Red : { //По протоколу 00 = Red
-						data_packet.packet.team_id.bit_0 = IR_ZERO;
-						data_packet.packet.team_id.bit_1 = IR_ZERO;
-						break;	
-					}
-		case Blue: { //По протоколу 01 = Blue
-						data_packet.packet.team_id.bit_0 = IR_ONE;
-						data_packet.packet.team_id.bit_1 = IR_ZERO;
-						break;	
-					}
-		case Yellow: { //По протоколу 10 = Yellow
-						data_packet.packet.team_id.bit_0 = IR_ZERO;
-						data_packet.packet.team_id.bit_1 = IR_ONE;
-						break;	
-					}
-		case Green: { //По протоколу 11 = Green
-						data_packet.packet.team_id.bit_0 = IR_ONE;
-						data_packet.packet.team_id.bit_1 = IR_ONE;
-						break;	
-					}
-
-
-			}
-
-
-
-
+		case Red : {		//According to protocol "00 = red"
+				data_packet.packet.team_id.bit_0 = IR_ZERO;
+				data_packet.packet.team_id.bit_1 = IR_ZERO;
+				break;	
+		}
+		case Blue: {		//According to protocol "01 = blue"
+				data_packet.packet.team_id.bit_0 = IR_ONE;
+				data_packet.packet.team_id.bit_1 = IR_ZERO;
+				break;	
+		}
+		case Yellow: {		//According to protocol "10 = yellow"
+				data_packet.packet.team_id.bit_0 = IR_ZERO;
+				data_packet.packet.team_id.bit_1 = IR_ONE;
+				break;	
+		}
+		case Green: { //According to protocol "11 = green"
+				data_packet.packet.team_id.bit_0 = IR_ONE;
+				data_packet.packet.team_id.bit_1 = IR_ONE;
+				break;	
+		}
+	}
 }
 
 
 
 
 /**************************************************************************************
-* Установка установка мощьности нашего оружия (наносимый урон)
-* в качестве аргумента функции указывается наносимый урон
-* в результате выполнения функции в глобальной переменной data_packet.damage
-* будут соответствующим образом инициированы  data_packet.damage.(bit_0 и bit_3) 
+* Sets the damage of our bullets (the damage)
+* Takes argument 'damage' to specify the damage
+* Manipulates global variable data_packet.damage
+* Constructs properly initialized data_packet.damage (bit_0...bit_3)
 ***************************************************************************************/
 
 
 void set_gun_damage(tgun_damage damage){
 
-switch(damage){
-		case Damage_1:{  //По протоколу 0000 = 1
-						data_packet.packet.damage.bit_0 = IR_ZERO;
-						data_packet.packet.damage.bit_1 = IR_ZERO;
-						data_packet.packet.damage.bit_2 = IR_ZERO;
-						data_packet.packet.damage.bit_3 = IR_ZERO;
-						break;
-						}
-		case Damage_2:{  //По протоколу 0001 = 2
-						data_packet.packet.damage.bit_0 = IR_ONE;
-						data_packet.packet.damage.bit_1 = IR_ZERO;
-						data_packet.packet.damage.bit_2 = IR_ZERO;
-						data_packet.packet.damage.bit_3 = IR_ZERO;
-						break;
-						}
-
-		case Damage_4:{  //По протоколу 0010 = 4
-						data_packet.packet.damage.bit_0 = IR_ZERO;
-						data_packet.packet.damage.bit_1 = IR_ONE;
-						data_packet.packet.damage.bit_2 = IR_ZERO;
-						data_packet.packet.damage.bit_3 = IR_ZERO;
-						break;
-						}
-
-		case Damage_5:{  //По протоколу 0011 = 5
-						data_packet.packet.damage.bit_0 = IR_ONE;
-						data_packet.packet.damage.bit_1 = IR_ONE;
-						data_packet.packet.damage.bit_2 = IR_ZERO;
-						data_packet.packet.damage.bit_3 = IR_ZERO;
-						break;
-						}
-		case Damage_7:{  //По протоколу 0100 = 7
-						data_packet.packet.damage.bit_0 = IR_ZERO;
-						data_packet.packet.damage.bit_1 = IR_ZERO;
-						data_packet.packet.damage.bit_2 = IR_ONE;
-						data_packet.packet.damage.bit_3 = IR_ZERO;
-						break;
-						}
-		case Damage_10:{  //По протоколу 0101 = 10
-						data_packet.packet.damage.bit_0 = IR_ONE;
-						data_packet.packet.damage.bit_1 = IR_ZERO;
-						data_packet.packet.damage.bit_2 = IR_ONE;
-						data_packet.packet.damage.bit_3 = IR_ZERO;
-						break;
-						}
-		case Damage_15:{  //По протоколу 0110 = 15
-						data_packet.packet.damage.bit_0 = IR_ZERO;
-						data_packet.packet.damage.bit_1 = IR_ONE;
-						data_packet.packet.damage.bit_2 = IR_ONE;
-						data_packet.packet.damage.bit_3 = IR_ZERO;
-						break;
-						}
-		case Damage_17:{  //По протоколу 0111 = 17
-						data_packet.packet.damage.bit_0 = IR_ONE;
-						data_packet.packet.damage.bit_1 = IR_ONE;
-						data_packet.packet.damage.bit_2 = IR_ONE;
-						data_packet.packet.damage.bit_3 = IR_ZERO;
-						break;
-						}
-		case Damage_20:{  //По протоколу 1000 = 20
-						data_packet.packet.damage.bit_0 = IR_ZERO;
-						data_packet.packet.damage.bit_1 = IR_ZERO;
-						data_packet.packet.damage.bit_2 = IR_ZERO;
-						data_packet.packet.damage.bit_3 = IR_ONE;
-						break;
-						}
-
-		case Damage_25:{  //По протоколу 1001 = 25
-						data_packet.packet.damage.bit_0 = IR_ONE;
-						data_packet.packet.damage.bit_1 = IR_ZERO;
-						data_packet.packet.damage.bit_2 = IR_ZERO;
-						data_packet.packet.damage.bit_3 = IR_ONE;
-						break;
-						}
-
-		case Damage_30:{  //По протоколу 1010 = 30
-						data_packet.packet.damage.bit_0 = IR_ZERO;
-						data_packet.packet.damage.bit_1 = IR_ONE;
-						data_packet.packet.damage.bit_2 = IR_ZERO;
-						data_packet.packet.damage.bit_3 = IR_ONE;
-						break;
-						}
-		case Damage_35:{  //По протоколу 1011 = 35
-						data_packet.packet.damage.bit_0 = IR_ONE;
-						data_packet.packet.damage.bit_1 = IR_ONE;
-						data_packet.packet.damage.bit_2 = IR_ZERO;
-						data_packet.packet.damage.bit_3 = IR_ONE;
-						break;
-						}
-
-		case Damage_40:{  //По протоколу 1100 = 40
-						data_packet.packet.damage.bit_0 = IR_ZERO;
-						data_packet.packet.damage.bit_1 = IR_ZERO;
-						data_packet.packet.damage.bit_2 = IR_ONE;
-						data_packet.packet.damage.bit_3 = IR_ONE;
-						break;
-						}
-
-		case Damage_50:{  //По протоколу 1101 = 50
-						data_packet.packet.damage.bit_0 = IR_ONE;
-						data_packet.packet.damage.bit_1 = IR_ZERO;
-						data_packet.packet.damage.bit_2 = IR_ONE;
-						data_packet.packet.damage.bit_3 = IR_ONE;
-						break;
-						}
-		case Damage_75:{  //По протоколу 1110 = 75
-						data_packet.packet.damage.bit_0 = IR_ZERO;
-						data_packet.packet.damage.bit_1 = IR_ONE;
-						data_packet.packet.damage.bit_2 = IR_ONE;
-						data_packet.packet.damage.bit_3 = IR_ONE;
-						break;
-						}
-
-		case Damage_100:{  //По протоколу 1111 = 100
-						data_packet.packet.damage.bit_0 = IR_ONE;
-						data_packet.packet.damage.bit_1 = IR_ONE;
-						data_packet.packet.damage.bit_2 = IR_ONE;
-						data_packet.packet.damage.bit_3 = IR_ONE;
-						break;
-						}
-
-
-
-			}
-
-
-
+	switch(damage){
+		case Damage_1:{  //According to protocol '0000 = 1'
+			data_packet.packet.damage.bit_0 = IR_ZERO;
+			data_packet.packet.damage.bit_1 = IR_ZERO;
+			data_packet.packet.damage.bit_2 = IR_ZERO;
+			data_packet.packet.damage.bit_3 = IR_ZERO;
+			break;
+		}
+		case Damage_2:{  //According to protocol '0001 = 2'
+			data_packet.packet.damage.bit_0 = IR_ONE;
+			data_packet.packet.damage.bit_1 = IR_ZERO;
+			data_packet.packet.damage.bit_2 = IR_ZERO;
+			data_packet.packet.damage.bit_3 = IR_ZERO;
+			break;
+		}
+		case Damage_4:{  //According to protocol '0010 = 4'
+			data_packet.packet.damage.bit_0 = IR_ZERO;
+			data_packet.packet.damage.bit_1 = IR_ONE;
+			data_packet.packet.damage.bit_2 = IR_ZERO;
+			data_packet.packet.damage.bit_3 = IR_ZERO;
+			break;
+		}
+		case Damage_5:{  //According to protocol '0011 = 5'
+			data_packet.packet.damage.bit_0 = IR_ONE;
+			data_packet.packet.damage.bit_1 = IR_ONE;
+			data_packet.packet.damage.bit_2 = IR_ZERO;
+			data_packet.packet.damage.bit_3 = IR_ZERO;
+			break;
+		}
+		case Damage_7:{  //According to protocol '0100' = 7'
+			data_packet.packet.damage.bit_0 = IR_ZERO;
+			data_packet.packet.damage.bit_1 = IR_ZERO;
+			data_packet.packet.damage.bit_2 = IR_ONE;
+			data_packet.packet.damage.bit_3 = IR_ZERO;
+			break;
+		}	
+		case Damage_10:{  //According to protocol '0101 = 10'	
+			data_packet.packet.damage.bit_0 = IR_ONE;
+			data_packet.packet.damage.bit_1 = IR_ZERO;
+			data_packet.packet.damage.bit_2 = IR_ONE;
+			data_packet.packet.damage.bit_3 = IR_ZERO;	
+			break;
+		}
+		case Damage_15:{  //According to protocol '0110 = 15'
+			data_packet.packet.damage.bit_0 = IR_ZERO;
+			data_packet.packet.damage.bit_1 = IR_ONE;
+			data_packet.packet.damage.bit_2 = IR_ONE;
+			data_packet.packet.damage.bit_3 = IR_ZERO;
+			break;
+		}
+		case Damage_17:{  //According to protocol '0111 = 17'
+			data_packet.packet.damage.bit_0 = IR_ONE;
+			data_packet.packet.damage.bit_1 = IR_ONE;
+			data_packet.packet.damage.bit_2 = IR_ONE;
+			data_packet.packet.damage.bit_3 = IR_ZERO;
+			break;
+		}
+		case Damage_20:{  //According to protocol '1000 = 20'
+			data_packet.packet.damage.bit_0 = IR_ZERO;
+			data_packet.packet.damage.bit_1 = IR_ZERO;
+			data_packet.packet.damage.bit_2 = IR_ZERO;
+			data_packet.packet.damage.bit_3 = IR_ONE;
+			break;
+		}
+		case Damage_25:{  //According to protocol '1001 = 25'
+			data_packet.packet.damage.bit_0 = IR_ONE;
+			data_packet.packet.damage.bit_1 = IR_ZERO;
+			data_packet.packet.damage.bit_2 = IR_ZERO;
+			data_packet.packet.damage.bit_3 = IR_ONE;
+			break;
+		}
+		case Damage_30:{  //According to protocol '1010 = 30'
+			data_packet.packet.damage.bit_0 = IR_ZERO;
+			data_packet.packet.damage.bit_1 = IR_ONE;
+			data_packet.packet.damage.bit_2 = IR_ZERO;
+			data_packet.packet.damage.bit_3 = IR_ONE;
+			break;
+		}
+		case Damage_35:{  //According to protocol '1011 = 35'
+			data_packet.packet.damage.bit_0 = IR_ONE;
+			data_packet.packet.damage.bit_1 = IR_ONE;
+			data_packet.packet.damage.bit_2 = IR_ZERO;
+			data_packet.packet.damage.bit_3 = IR_ONE;
+			break;
+		}
+		case Damage_40:{  //According to protocol '1100 = 40'
+			data_packet.packet.damage.bit_0 = IR_ZERO;
+			data_packet.packet.damage.bit_1 = IR_ZERO;
+			data_packet.packet.damage.bit_2 = IR_ONE;
+			data_packet.packet.damage.bit_3 = IR_ONE;
+			break;
+		}
+		case Damage_50:{  //According to protocol '1101 = 50'
+			data_packet.packet.damage.bit_0 = IR_ONE;
+			data_packet.packet.damage.bit_1 = IR_ZERO;
+			data_packet.packet.damage.bit_2 = IR_ONE;
+			data_packet.packet.damage.bit_3 = IR_ONE;
+			break;
+		}
+		case Damage_75:{  //According to protocol '1110 = 75'
+			data_packet.packet.damage.bit_0 = IR_ZERO;
+			data_packet.packet.damage.bit_1 = IR_ONE;
+			data_packet.packet.damage.bit_2 = IR_ONE;
+			data_packet.packet.damage.bit_3 = IR_ONE;
+			break;
+		}
+		case Damage_100:{  //According to protocol '1111 = 100'
+			data_packet.packet.damage.bit_0 = IR_ONE;
+			data_packet.packet.damage.bit_1 = IR_ONE;
+			data_packet.packet.damage.bit_2 = IR_ONE;
+			data_packet.packet.damage.bit_3 = IR_ONE;
+			break;
+		}
+	}
 }
 
 
 
 
-void init_var(void){            //Задаём значения переменным
-check_eeprom();
-last_simple = 0xFFFF; //иначе будет звук выстрела при сбросе
-snd_adress.curr_adress = (uint8_t*)0xFFFF; //иначе бубдет попытка воспроизвести звук
-ir_transmitter_on=false; 	//Запретим пока передачу данных (поскольку данные ещё не сформированны)
-set_player_id(eeprom_read_byte(&eeprom_player_id));	//Устанавливаем идентификатор игрока
-set_team_color(team_id());	//Устанавливаем идентификатор (цвет) команды
-set_gun_damage(gun_damage());		//Устанавливаем мощьность оружия (урон)
+void init_var(void){            			//Initializing variables
+	check_eeprom();
+	last_simple = 0xFFFF; 				//We set the sample to the end of the buffer or else it starts playing at reset
+	snd_adress.curr_adress = (uint8_t*)0xFFFF; 	//'budbet otherwise attempt to reproduce the sound (FIXME: This mistranslates)
+	ir_transmitter_on=false; 			//Disable transmission of data (since the data isnt constructed yet)
+	set_player_id(eeprom_read_byte(&eeprom_player_id));	//set the player ID from EEPROM
+	set_team_color(team_id());			//Set the TEAM ID (color)
+	set_gun_damage(gun_damage());			//Initialize gun-damage
 
-clips=eeprom_read_byte(&eeprom_clips);//Устанавливаем количество обойм
-bullets=0; //eeprom_read_byte(&eeprom_bullets_in_clip);//Устанавливаем количество патронов
-data_packet.packet.header = IR_START;		//Устанавливаем  заголовку (старт биту) необходимую длительность
-data_packet.packet.end_of_data = 0;		//0 - это указание передатчику, что данных для передачи больше нет
-cursor_position = 0; //Курсор - на начало блока данных
-start_bit_received = false;//Старт бит ещё не принят
-bit_in_rx_buff = 0;//Буфер приемника пуст
-rx_event = NOT_EVENT;//Сбрасываем события приемника
-//reset_clock(); //обнуляем часы
-life = 8;//здоровье -100% выводим на диоды
-life_in_percent = 100;//эту выводим на дисплей
-key_pressing_duration.key_1    =0;//обнуляем счетчики 
-						  //длительности
-						  //непрерывного нажатия кнопок
-key_pressing_duration.key_1_inc=1;//разрешаем отсчет длительности
-key_pressing_duration.key_2    =0;//обнуляем счетчики 
-						  //длительности
-						  //непрерывного нажатия кнопок
-key_pressing_duration.key_2_inc=1;//разрешаем отсчет длительности
-chit_detected_counter=0;
-chit_detected = false;
-display_bullets_update_now = 0;
-display_batt_mode = icon;
-curr_ir_pin = eeprom_read_byte(&eeprom_curr_ir_pin);//Устанавливаем мощность ИК излучения
-cr_received = false; //символ "\r" ещё не получен
-simples_in_queue =0;
-//update_suond_buffer_now = 0;
-eeprom_is_open = false;
-receiver_on = false;
+	clips=eeprom_read_byte(&eeprom_clips);		//initialize clip-count from EEPROM
+	bullets=0; //eeprom_read_byte(&eeprom_bullets_in_clip);//Initialize amount of bullets
+	data_packet.packet.header = IR_START;		//Set the data_packet header to START_BIT
+	data_packet.packet.end_of_data = 0;		//Set this to 0 to indicate end of data
+	cursor_position = 0; 				//an index-pointer,0 is beginning of block
+	start_bit_received = false;			//We havent received a start_bit yet
+	bit_in_rx_buff = 0;				//the receiver buffer is empty
+	rx_event = NOT_EVENT;				//reset the receiver event
+	//reset_clock(); 				//reset the clock
+	life = 8;					//health -100% to drive the HEALTH LED's (FIXME: not sure about translation)
+	life_in_percent = 100;				//Value for on LC-Display
+	key_pressing_duration.key_1    =0;		//duration-counter is reset
+							//Duration (FIXME: Leftover comments ?)
+							//Continuous pressing (FIXME: leftover comments ?)
+	key_pressing_duration.key_1_inc=1;		//Allow duration_counter for key_1 to increment
+	key_pressing_duration.key_2    =0;		//duration counter is reset
+							//Duration (FIXME: see above)
+							//Continuous pressing (FIXME: see above)
+	key_pressing_duration.key_2_inc=1;		//allow duration to increment
+	chit_detected_counter=0;
+	chit_detected = false;
+	display_bullets_update_now = 0;
+	display_batt_mode = icon;
+	curr_ir_pin = eeprom_read_byte(&eeprom_curr_ir_pin);//Initialize IR-LED transmit power
+	cr_received = false; 				//Character '\r' has not been received yet
+	simples_in_queue =0;
+	//update_suond_buffer_now = 0;
+	eeprom_is_open = false;
+	receiver_on = false;
 }
 
 
 
 
-bool get_buffer_bit(uint8_t index){		//Считываем значение бита в буфере ИК-приемника
-uint8_t byte_index;
-uint8_t bit_index;
-byte_index = index/8; //Определяем, в каком байте нахадится нужный бит
-bit_index = index - (byte_index*8);//Определяем номер бита в байте
-if(rx_buffer[byte_index]&(1<<(7-bit_index))) return true;
-else return false;
-
-
+bool get_buffer_bit(uint8_t index){			//Return value of the bit in the IR receiver buffer
+	uint8_t byte_index;
+	uint8_t bit_index;
+	byte_index = index/8; 				//determine in which byte the index'ed bit is
+	bit_index = index - (byte_index*8);		//calculate bit position in found byte
+	if(rx_buffer[byte_index]&(1<<(7-bit_index))) return true;
+	else return false;
 }
 
 
-inline trx_packet get_packet_value(){ //Считываем данные из полученного пакета
-trx_packet result;
-uint8_t byte_tmp;
+inline trx_packet get_packet_value(){ 			//return value of recieved IR packet
+	trx_packet result;
+	uint8_t byte_tmp;
 
-result.player_id = rx_buffer[0];
-byte_tmp = rx_buffer[1];
-byte_tmp = byte_tmp << 2; //избавляемся от бит цвета команды
-byte_tmp = byte_tmp >> 4;
-result.damage = pgm_read_byte(&(damage_value[byte_tmp]));
-result.team_id = rx_buffer[1]>>6;
+	result.player_id = rx_buffer[0];
+	byte_tmp = rx_buffer[1];
+	byte_tmp = byte_tmp << 2;			//get rid of the color-bits (FIXME: is this what it means ?)
+	byte_tmp = byte_tmp >> 4;
+	result.damage = pgm_read_byte(&(damage_value[byte_tmp]));
+	result.team_id = rx_buffer[1]>>6;
 
-return result;
+	return result;
 }
 
 
 
-
-
-
-
-
-tteam_color team_id()//Опреднляем цвет нашей команды 
+tteam_color team_id()		//returns color of our team as ID (00..11)
 {
 
 
-tteam_color result;
+	tteam_color result;
 /*
-	switch (SW_TEAM_IN&SW_TEAM_MASK) //проверим состояние переключателя "DAMAGE"
+	switch (SW_TEAM_IN&SW_TEAM_MASK) //РїСЂРѕРІРµСЂРёРј СЃРѕСЃС‚РѕСЏРЅРёРµ РїРµСЂРµРєР»СЋС‡Р°С‚РµР»СЏ "DAMAGE"
 	{
-		case SW_TEAM_KEY1_PIN: //1-й ключ в состоянии OFF (разомкнут), а второй замкнут (ON)
+		case SW_TEAM_KEY1_PIN: //1-Р№ РєР»СЋС‡ РІ СЃРѕСЃС‚РѕСЏРЅРёРё OFF (СЂР°Р·РѕРјРєРЅСѓС‚), Р° РІС‚РѕСЂРѕР№ Р·Р°РјРєРЅСѓС‚ (ON)
 		{
 			result = Blue;
 			//return result;
 			break;
 		}
-		case SW_TEAM_KEY2_PIN://2-й ключ в состоянии OFF (разомкнут), а первый замкнут (ON)
+		case SW_TEAM_KEY2_PIN://2-Р№ РєР»СЋС‡ РІ СЃРѕСЃС‚РѕСЏРЅРёРё OFF (СЂР°Р·РѕРјРєРЅСѓС‚), Р° РїРµСЂРІС‹Р№ Р·Р°РјРєРЅСѓС‚ (ON)
 		{
 			result = Yellow;
 			//return result;
 			break;
 		}
 		
-		case SW_TEAM_KEY1_PIN|SW_TEAM_KEY2_PIN: //оба ключа в состоянии OFF
+		case SW_TEAM_KEY1_PIN|SW_TEAM_KEY2_PIN: //РѕР±Р° РєР»СЋС‡Р° РІ СЃРѕСЃС‚РѕСЏРЅРёРё OFF
 		{
 			result = Red;
 			//return result;
 			break;
 		}
 
-		case 0: //оба ключа в состоянии ON
+		case 0: //РѕР±Р° РєР»СЋС‡Р° РІ СЃРѕСЃС‚РѕСЏРЅРёРё ON
 		{
 			result = Green;
 			//return result;
@@ -1067,72 +1040,65 @@ tteam_color result;
 
 	}
 */
-result = eeprom_read_byte(&eeprom_team_id);
-return result;
+	result = eeprom_read_byte(&eeprom_team_id);
+	return result;
 }
 
 
 
 void write_team_id_to_eeprom(tteam_color color){
-eeprom_write_byte(&eeprom_team_id, color);
-
+	eeprom_write_byte(&eeprom_team_id, color);
 }
 
 
 /**************************************************************************************
-* Функция выполняет настройку таймера timer0
-* Режим работы таймер - СТС (сброс при совпадении)
-* тактирование - с предделителем на 1024
-* регист сравнения будет иметь такое значение, чтобы прерывания
-* генерировались 100 прерываний в секунду 
+* Function to prepare TIMER0
+* Set it to mode CTC (Clear Timer on Compare)
+* Set timer prescaler to 1024
+* Make timer trigger interrupt
+* Results in 100 interrupts per second
 ***************************************************************************************/
 
 void init_timer0(void){
 
-//OCR0 = F_CPU/1024/100-1;		// Прерывания должны генерироваться с частотой 100 Гц
+	//OCR0 = F_CPU/1024/100-1;		// Interrupts to be generated at a frequency of 100Hz
 
-OCR0 = 128; //Скважность = 0,5
-TCCR0 = _BV(WGM01)| _BV(WGM00);	// Режим работы таймер - fast PWM (быстрый ШИМ)
-TCCR0 |=  _BV(CS00);            // Тактирование с частотой резонвтора 8 МГц
-TCCR0 |=  _BV(COM01);    		//Неинвертированный режим ШИМ
+	OCR0 = 128; 				//Duty-cycle = 0.5
+	TCCR0 = _BV(WGM01)| _BV(WGM00);		// timer mode - Fast PWM 
+	TCCR0 |=  _BV(CS00);            	// clocking at 8MHZ frequency of resonator
+	TCCR0 |=  _BV(COM01);    		// non-inverted PWM-mode
 
-
-
-
-
-
-//TIMSK |= _BV(OCIE0);          // Разрешаем прерывания по захвату/сравнению
-		                      // Разрешаем прерывания глобально
-
+	//TIMSK |= _BV(OCIE0);          // enable interrupt on capture/compare
+					// enable global interrupts
 }
 
 
-tgun_damage gun_damage()//Определяем текущий урон, наносимый нашим тагом
+tgun_damage gun_damage()		//Determine the current damage from our tagger
 {
-/*tgun_damage result;
-	switch (SW_DAMAGE_IN&SW_DAMAGE_MASK) //проверим состояние переключателя "DAMAGE"
+/*	tgun_damage result;
+	switch (SW_DAMAGE_IN&SW_DAMAGE_MASK) //Check the state of the switch 'DAMAGE'
 	{
-		case SW_DAMAGE_KEY1_PIN: //1-й ключ в состоянии OFF (разомкнут), а второй замкнут (ON)
+		case SW_DAMAGE_KEY1_PIN: //1st switch in OFF (open) state and the other is closed (ON)
 		{
 			result = Damage_50;
 			//return result;
 			break;
 		}
-		case SW_DAMAGE_KEY2_PIN://2-й ключ в состоянии OFF (разомкнут), а первый замкнут (ON)
+		case SW_DAMAGE_KEY2_PIN://2nd switch in OFF state (open) and the first is closed (ON)
 		{
 			result = Damage_25;
 			//return result;
 			break;
 		}
 		
-		case SW_DAMAGE_KEY1_PIN|SW_DAMAGE_KEY2_PIN: //оба ключа в состоянии OFF
+		case SW_DAMAGE_KEY1_PIN|SW_DAMAGE_KEY2_PIN: 	//Both switches to OFF (open)
 		{
 			result = Damage_10;
 			//return result;
 			break;
 		}
 
-		case 0: //оба ключа в состоянии ON
+		case 0: 					//Both switches to ON (closed)
 		{
 			result = Damage_100;
 			//return result;
@@ -1142,89 +1108,87 @@ tgun_damage gun_damage()//Определяем текущий урон, наносимый нашим тагом
 
 	}
 
-return result;
+	return result;
 */
-return eeprom_read_byte(&eeprom_damage);
+	return eeprom_read_byte(&eeprom_damage);
 }
 
 
 
-void init_timer1(void){ //Настраиваем timer1 на частоту выборки звука -8 
-TCCR1A &=~_BV(WGM10); //режим работы таймера - CTC (сброс при совпадении)
-TCCR1A &=~_BV(WGM11);
-TCCR1B |=_BV(WGM12); 
-TCCR1B &=~_BV(WGM13); 
-TCCR1A &=~_BV(COM1A0);//отключаем таймер от вывода OC1A
-TCCR1A &=~_BV(COM1A1);
-TCCR1B &=~_BV(COM1B0);//отключаем таймер от вывода OC1B
-TCCR1B &=~_BV(COM1B1);
+void init_timer1(void){ 	//Set up timer1 to match sound-sample frequency -8khz
+	TCCR1A &=~_BV(WGM10);	//Timer mode - CTC (Clear Timer on Compare)
+	TCCR1A &=~_BV(WGM11);
+	TCCR1B |=_BV(WGM12); 
+	TCCR1B &=~_BV(WGM13); 
+	TCCR1A &=~_BV(COM1A0);	//disable timer output on OC1A
+	TCCR1A &=~_BV(COM1A1);
+	TCCR1B &=~_BV(COM1B0);	//disable timer output on OC1B
+	TCCR1B &=~_BV(COM1B1);
 
-TCCR1B &=~_BV(CS10); //делитель = 8
-TCCR1B |=_BV(CS11);
-TCCR1B &=~_BV(CS12); 
-//OCR1AL=60;
-//OCR1AL=124;
-OCR1AL=(F_CPU/8000)/8-1; // настраиваем на частоту выборки звука - 8 кГц
-//OCR1AL=(F_CPU/16000)/8-1; // настраиваем на частоту выборки звука - 8 кГц
-//OCR1AL=248; 
-//OCR1AH=0x27;
-//OCR1AL=0x0F;
+	TCCR1B &=~_BV(CS10);	//divider = 8
+	TCCR1B |=_BV(CS11);
+	TCCR1B &=~_BV(CS12); 
+	//OCR1AL=60;
+	//OCR1AL=124;
+	OCR1AL=(F_CPU/8000)/8-1; 	// set up the sampling frequency - 8Khz
+	//OCR1AL=(F_CPU/16000)/8-1; 	// set up the sampling frequency - 8Khz
+	//OCR1AL=248;
+	//OCR1AH=0x27;
+	//OCR1AL=0x0F;
 
-
-TIMSK |= _BV(OCIE1A);  
-//TIMSK |= _BV(OCIE1B);  
-
+	TIMSK |= _BV(OCIE1A);
+	//TIMSK |= _BV(OCIE1B);
 }
 
 
 
-void display_life(uint8_t life_value) //отображаем уровень жизни на светодиодной линейке
+void display_life(uint8_t life_value) 	//Display HEALTH indication with the HEALTH-LEDS
 {
 
-uint8_t integer_part;
+	uint8_t integer_part;
 	for (int i=0; i<4; i++)
-	{life_leds_status[i] = OFF;}
+	{
+		life_leds_status[i] = OFF;
+	}
+	integer_part = life_value/2;
+	for (int i=0; i<integer_part; i++)
+	{
+		life_leds_status[i] = ON;
+	}
 
-integer_part = life_value/2;
-for (int i=0; i<integer_part; i++)
-{
-	life_leds_status[i] = ON;
-}
 
-
-if ((life_value-integer_part*2)>0) 
- life_leds_status[integer_part] = FQR_2HZ;
- 
+	if ((life_value-integer_part*2)>0) 
+ 		life_leds_status[integer_part] = FQR_2HZ;
 }
 
 /*
-uint8_t bullets_limit(void)//Определяем лимит патронов
+uint8_t bullets_limit(void)		//Determine the amount of rounds set with DIPSWITCH (FIXME: deprecated)
 {
 
 uint16_t result;
-	switch (SW_BULLETS_LIMIT_IN&SW_BULLETS_LIMIT_MASK) //проверим состояние переключателя "BULLETS_LIMIT"
+	switch (SW_BULLETS_LIMIT_IN&SW_BULLETS_LIMIT_MASK) //check the state of the  "BULLETS_LIMIT" switches
 	{
-		case SW_BULLETS_LIMIT_KEY1_PIN: //1-й ключ в состоянии OFF (разомкнут), а второй замкнут (ON)
+		case SW_BULLETS_LIMIT_KEY1_PIN: // OFF+ON
 		{
 			result = 64;
 			//return result;
 			break;
 		}
-		case SW_BULLETS_LIMIT_KEY2_PIN://2-й ключ в состоянии OFF (разомкнут), а первый замкнут (ON)
+		case SW_BULLETS_LIMIT_KEY2_PIN:// ON+OFF
 		{
 			result = 32;
 			//return result;
 			break;
 		}
 		
-		case SW_BULLETS_LIMIT_KEY1_PIN|SW_BULLETS_LIMIT_KEY2_PIN: //оба ключа в состоянии OFF
+		case SW_BULLETS_LIMIT_KEY1_PIN|SW_BULLETS_LIMIT_KEY2_PIN: //OFF+OFF
 		{
 			result = 16;
 			//return result;
 			break;
 		}
 
-		case 0: //оба ключа в состоянии ON
+		case 0: //ON+ON
 		{
 			result = 128;
 			//return result;
@@ -1244,33 +1208,39 @@ return result;
 
 
 
-TFIRE_MODE_STATUS fire_mode()//Определяем текущий режим огня (одиночный/очередями)
+TFIRE_MODE_STATUS fire_mode()		//Determine fire-mode (Single-shot/Bursts)
 {
-TFIRE_MODE_STATUS result;
-if (FIRE_MODE_KEY_IN&FIRE_MODE_KEY_PIN) result = single;
-else  result = queues;
-return result;
-
+	TFIRE_MODE_STATUS result;
+	if (FIRE_MODE_KEY_IN&FIRE_MODE_KEY_PIN) 
+	{
+		result = single;
+	}
+	else  
+	{
+		result = queues;
+	}
+	
+	return result;
 }
 
 
 
 
-void beep(uint16_t fqr, uint16_t count, uint8_t value) //Воспроизводим звук (частота, длительность, громкость)
+void beep(uint16_t fqr, uint16_t count, uint8_t value) 		//Plays a beep (frequency 'fqr' , duration 'count', volume 'value')
 {
 uint16_t last_simple_tmp;
-uint8_t devider; //делитель, будет иметь значение, указывающее, на сколько нужно поделить частоту 8 кГц чтобы получить нужную (fqr)
-uint16_t beep_counter; //длительность звука в циклах (один цикл равен периоду колибаний)
+uint8_t devider; 						//will contain value we need to divide 8Khz with to get to desired frequency 'fqr'
+uint16_t beep_counter; 						//Sound duration in cycles (one cycle is one oscillator period)
 
-if (fqr > 4000) return; //если запрашиваемая частота выше 4 кГц то мы её воспроизвести не сможем, выходим
+if (fqr > 4000) return; 					//if requested sound is higher than 4Khz, we cannot play it
 
-last_simple_tmp = last_simple; //сохраним значение последнего семпла звука выстрела (вдруг звук воспроизводится в это время)
-last_simple = 0xFFFF; //иначе будет звук выстрела
+last_simple_tmp = last_simple; 					//save the position of the last sample-sound (for later playback)
+last_simple = 0xFFFF; 						//to prevent sound from playing
 
 
 devider = 4000/fqr; 
-if (count > 160) count = 160; //ограничим время воспроизведения 16 секундами
-beep_counter = (fqr/10)*count; //количество циклов (периодов колебаний)
+if (count > 160) count = 160; 					//we don't allow beeps longer than 16 seconds
+beep_counter = (fqr/10)*count; 					//number of cycles (periods of oscillation)
 
 for (uint16_t i=0; i < beep_counter; i++)
 	{
@@ -1284,98 +1254,86 @@ for (uint16_t i=0; i < beep_counter; i++)
 	}
 
 
-last_simple = last_simple_tmp;
+	last_simple = last_simple_tmp;				// restore last position of sound played
 }
 
-inline void damage_beep(void) // Воспроизводим звук при ранении
+inline void damage_beep(void) 					// play 'HIT' sound (beep)
 {
-WOUND_LED_ON; //включаем вспомогательный светодиод
+	WOUND_LED_ON; 						//Turn on 'WOUND' LED
 
-beep(1000, 3, 128);
-beep(500, 3, 128);
-WOUND_LED_OFF;
+	beep(1000, 3, 128);
+	beep(500, 3, 128);
+	WOUND_LED_OFF;
 
 }
 
 
-void playhitsound(void) //Воспроизводим звук при ранении
-
+void playhitsound(void) 					// Plays 'HIT' sound (sample)
 {
-if (simples_in_queue>1) //если звук выстрла воспроизводится
-				{
-					simples_in_queue=1;//закроем eeprom
-					while (eeprom_is_open);//дождемся, пока eerom закроется
-				}
-play_sound_2();
+	if (simples_in_queue>1) 				// sample is playing already
+	{
+		simples_in_queue=1;				//close the EEPROM
+		while (eeprom_is_open);				//Wait until EEPROM is closed
+	}
+	play_sound_2();
 /*
-snd_adress.start_adress = &pSnd_hit[0];
-
-snd_adress.end_adress = &pSnd_hit[sizeof(pSnd_hit)-1];
-
-snd_adress.curr_adress = &pSnd_hit[0];
-
-play_hit_snd = true; //разрешаем воспроизведенме звука
-
-while (play_hit_snd);// ждем окончания воспроизведения звука
-
-*/}
-
-
-void playclipinsound(void) //Воспроизводим звук при передёргивании затвора
-{
-//play_hit_snd = true; //разрешаем воспроизведенме звука
-play_sound_3();
-//play_hit_snd = false; 
-/*
-snd_adress.start_adress = &clipinSnd[0];
-
-snd_adress.end_adress = &clipinSnd[sizeof(clipinSnd)-1];
-
-snd_adress.curr_adress = &clipinSnd[0];
-
-play_hit_snd = true; //разрешаем воспроизведенме звука
-
-while (play_hit_snd);// ждем окончания воспроизведения звука
+	snd_adress.start_adress = &pSnd_hit[0];
+	snd_adress.end_adress = &pSnd_hit[sizeof(pSnd_hit)-1];
+	snd_adress.curr_adress = &pSnd_hit[0];
+	play_hit_snd = true; 	//allow 'HIT' sound
+	while (play_hit_snd);	//Wait for audio to end
 */
 }
 
 
-void playclipoutsound(void) //Воспроизводим звук при отпускании затвора
+void playclipinsound(void) 		//Plays while 'entering clip' (FIXME: check this)
 {
-//play_hit_snd = true; //разрешаем воспроизведенме звука
-play_sound_4();
-//play_hit_snd = false; 
+	//play_hit_snd = true; 		//Allow 'HIT' sound
+	play_sound_3();
+	//play_hit_snd = false; 
 /*
-snd_adress.start_adress = &clipoutSnd[0];
+	snd_adress.start_adress = &clipinSnd[0];
+	snd_adress.end_adress = &clipinSnd[sizeof(clipinSnd)-1];
+	snd_adress.curr_adress = &clipinSnd[0];
+	play_hit_snd = true; 	// allow HIT sound
+	while (play_hit_snd);	// wait for end of audio
+*/
+}
 
-snd_adress.end_adress = &clipoutSnd[sizeof(clipinSnd)-1];
 
-snd_adress.curr_adress = &clipoutSnd[0];
+void playclipoutsound(void) 	//Plays while 'removing clip' (FIXME: Check this)
+{
+	//play_hit_snd = true; //allow 'HIT' sound
+	play_sound_4();
+	//play_hit_snd = false; 
 
-play_hit_snd = true; //разрешаем воспроизведенме звука
-
-while (play_hit_snd);// ждем окончания воспроизведения звука
+/*
+	snd_adress.start_adress = &clipoutSnd[0];
+	snd_adress.end_adress = &clipoutSnd[sizeof(clipinSnd)-1];
+	snd_adress.curr_adress = &clipoutSnd[0];
+	play_hit_snd = true; 	//Allow 'HIT' sound
+	while (play_hit_snd);	//wait for audio to finish
 */
 }
 
 
 
 
-void invite(){ //приглашение  в меню настроек
+void invite(){ 			//present menu settings
 
-volatile uint8_t countdown = 5; //счётчик обратного отсчёта
+	volatile uint8_t countdown = 5; //countdown
 
-lcd_clrscr();
-lcd_home();
-if ((eeprom_read_byte(&eeprom_tm_serial_num.device_code)==0)||(eeprom_read_byte(&eeprom_tm_serial_num.device_code)==0xFF))
-	/* если ключ ещё не записан*/
+	lcd_clrscr();
+	lcd_home();
+	if ((eeprom_read_byte(&eeprom_tm_serial_num.device_code)==0)||(eeprom_read_byte(&eeprom_tm_serial_num.device_code)==0xFF))
+	/* If the key is not registered*/
 	{//[if]
 		joystick_event = no_pressing;
-		lcd_puts("Запись ключа ТМ");
+		lcd_puts("Р—Р°РїРёСЃСЊ РєР»СЋС‡Р° РўРњ"); // "Record Key TM"
 		lcd_gotoxy(0, 1);
-		lcd_puts("Центр.кн.-отмена");
+		lcd_puts("Р¦РµРЅС‚СЂ.РєРЅ.-РѕС‚РјРµРЅР°"); // "Tsentr.kn-cancel" (Center key - cancel)
 		//timer1 = 0;
-		while ((joystick_event!=key_central_pressing)&&(eeprom_read_byte(&eeprom_tm_serial_num.device_code)==0)||(eeprom_read_byte(&eeprom_tm_serial_num.device_code)==0xFF)) //пока не нажата центральная кнопка или не записан ключ
+		while ((joystick_event!=key_central_pressing)&&(eeprom_read_byte(&eeprom_tm_serial_num.device_code)==0)||(eeprom_read_byte(&eeprom_tm_serial_num.device_code)==0xFF)) //While center-button is pressed OR key is not registered
 		{//[while]
 				
 				while ((cr_received==false)&&(joystick_event==no_pressing)&&(tm_event == no_tm_event)){};
@@ -1397,14 +1355,14 @@ if ((eeprom_read_byte(&eeprom_tm_serial_num.device_code)==0)||(eeprom_read_byte(
 					{
 						lcd_clrscr();
 						lcd_home();
-						lcd_puts("Ошибка CRC");
+						lcd_puts("РћС€РёР±РєР° CRC"); // Trans: "CRC error"
 						timer2 = 0;
 						while (timer2 < 6000){};
 						lcd_clrscr();
 						lcd_home();
-						lcd_puts("Запись ключа ТМ");
+						lcd_puts("Р—Р°РїРёСЃСЊ РєР»СЋС‡Р° РўРњ"); // Trans: "Record Key TM"
 						lcd_gotoxy(0, 1);
-						lcd_puts("Центр.кн.-отмена");
+						lcd_puts("Р¦РµРЅС‚СЂ.РєРЅ.-РѕС‚РјРµРЅР°"); // Trans: Tsentr.kn-cancel" (Center key - cancel ?)
 						tm_event=no_tm_event;
 					}
 					break;
@@ -1420,7 +1378,7 @@ if ((eeprom_read_byte(&eeprom_tm_serial_num.device_code)==0)||(eeprom_read_byte(
 						}
 						lcd_clrscr();
 						lcd_home();
-						lcd_puts("Ключ ТМ записан!");
+						lcd_puts("РљР»СЋС‡ РўРњ Р·Р°РїРёСЃР°РЅ!"); // Trans: "Key TM is written"
 						timer2 = 0;
 						while (timer2 < 6000){};
 						tm_event=no_tm_event;
@@ -1435,233 +1393,220 @@ if ((eeprom_read_byte(&eeprom_tm_serial_num.device_code)==0)||(eeprom_read_byte(
 
 				if (joystick_event!=key_central_pressing) joystick_event = no_pressing;
 		
-			};//[/while]
+		};//[/while]
 		
-if (joystick_event==key_central_pressing)
-		/*если вышли по нажатию центральной кнопки*/
-	{
-		joystick_event = no_pressing;
-		lcd_clrscr();
-		lcd_home();
-
-		lcd_puts("Для настроек жми\nцентр. кнопку 5");
-		//lcd_puts("Вправо");
-		while ((countdown > 0)&&(joystick_event==no_pressing))//пока не кончиться обратный отсчёт или не нажмун кнопку джойстика
+		if (joystick_event==key_central_pressing) /*if the left by pressing the center button (FIXME: mistranslation)*/
 		{
-			timer2 = 0;
-			while ((timer2 < 6000)&&(joystick_event==no_pressing)){};
-			if (joystick_event!=no_pressing) break; //если нажата кнопка, выходим из цикла 
-			lcd_gotoxy(14, 1);
-			countdown--;
-			lcd_puts(int_to_str(countdown,0));
+			joystick_event = no_pressing;
+			lcd_clrscr();
+			lcd_home();
+
+			lcd_puts("Р”Р»СЏ РЅР°СЃС‚СЂРѕРµРє Р¶РјРё\nС†РµРЅС‚СЂ. РєРЅРѕРїРєСѓ 5"); // Trans: "To configure PUSH\ncenter button"
+			//lcd_puts("Р’РїСЂР°РІРѕ");
+			while ((countdown > 0)&&(joystick_event==no_pressing))// Keep pressed till end of countdown or joystick release
+			{
+				timer2 = 0;
+				while ((timer2 < 6000)&&(joystick_event==no_pressing)){};
+				if (joystick_event!=no_pressing) break; 	//If the button is pressed, exit the loop
+				lcd_gotoxy(14, 1);
+				countdown--;
+				lcd_puts(int_to_str(countdown,0));
+			}
+
+			if (joystick_event==key_central_pressing) 
+			{
+		
+				get_all_setings();
+				/*
+				get_int_settings("РРґРµРЅС‚. РёРіСЂРѕРєР°:", &eeprom_player_id, 127); 	//Pressed the center button
+				set_player_id(eeprom_read_byte(&eeprom_player_id));		//Set ID of player from EEPROM
+				get_int_settings("РРґРµРЅС‚. РєРѕРјР°РЅРґС‹:", &eeprom_team_id, 3); 	//pressed the center button
+				set_team_color(team_id());					//Set team (color) id
+				get_enum_settings("РќР°РЅРѕСЃРёРјС‹Р№ СѓСЂРѕРЅ:", &eeprom_damage, &damage_value, Damage_100);
+				set_gun_damage(gun_damage());		//РЈСЃС‚Р°РЅР°РІР»РёРІР°РµРј РјРѕС‰СЊРЅРѕСЃС‚СЊ РѕСЂСѓР¶РёСЏ (СѓСЂРѕРЅ)
+				get_int_settings("Р•РјРєРѕСЃС‚СЊ РјР°РіР°Р·РёРЅР°:", &eeprom_bullets_in_clip, 90); //Pressed the center button
+				get_int_settings("РњР°РіР°Р·РёРЅРѕРІ:", &eeprom_clips, 90);
+				get_int_settings("Р’СЂРµРјСЏ РїРµСЂРµР·Р°СЂСЏРґР°:", &eeprom_reload_duration, 8);
+				*/
+		//	return;
+			}
 		}
 
-		if (joystick_event==key_central_pressing) 
-		{
-		
-			get_all_setings();
-			/*
-			get_int_settings("Идент. игрока:", &eeprom_player_id, 127); //нажата центральная кнопка
-			set_player_id(eeprom_read_byte(&eeprom_player_id));	//Устанавливаем идентификатор игрока
-			get_int_settings("Идент. команды:", &eeprom_team_id, 3); //нажата центральная кнопка
-			set_team_color(team_id());	//Устанавливаем идентификатор (цвет) команды
-			get_enum_settings("Наносимый урон:", &eeprom_damage, &damage_value, Damage_100);
-			set_gun_damage(gun_damage());		//Устанавливаем мощьность оружия (урон)
-			get_int_settings("Емкость магазина:", &eeprom_bullets_in_clip, 90); //нажата центральная кнопка 
-			get_int_settings("Магазинов:", &eeprom_clips, 90);
-			get_int_settings("Время перезаряда:", &eeprom_reload_duration, 8);
-			*/
-	//	return;
-		}
-	}
 
-
-//	bullets = eeprom_read_byte(&eeprom_bullets_in_clip);
-//	BULLETS_OUT_LED_OFF;
-	bullets = 0;
-	BULLETS_OUT_LED_ON;
+//		bullets = eeprom_read_byte(&eeprom_bullets_in_clip);
+//		BULLETS_OUT_LED_OFF;
+		bullets = 0;
+		BULLETS_OUT_LED_ON;
 	
-	clips = eeprom_read_byte(&eeprom_clips);
-	joystick_event=no_pressing;
-	keyboard_event=no_key_pressing;
-	tm_event=no_tm_event;
-
-
+		clips = eeprom_read_byte(&eeprom_clips);
+		joystick_event=no_pressing;
+		keyboard_event=no_key_pressing;
+		tm_event=no_tm_event;
 
 
 	}//[/if]
 
-
-if ((eeprom_read_byte(&eeprom_tm_serial_num.device_code)!=0)&&(eeprom_read_byte(&eeprom_tm_serial_num.device_code)!=0xFF))
-
-/*если ТМ ключ уже занесён в память*/
-
+	if ((eeprom_read_byte(&eeprom_tm_serial_num.device_code)!=0)&&(eeprom_read_byte(&eeprom_tm_serial_num.device_code)!=0xFF))
+	/*If TouchMemory is already in EEPROM*/ 
 	{//[if]
 		
 		volatile uint8_t tm_valide=0;
 		while (!tm_valide)
 		{//[while]
-		lcd_clrscr();
-		lcd_home();
-		lcd_puts("Для активации\nприложи ключ");
-		//lcd_gotoxy(0, 1);
-		//lcd_puts("приложите ключ");
-		while ((cr_received==false)&&(tm_event == no_tm_event)){};
-		if (cr_received)
-				{	
-					parsing_command();
-					
+			lcd_clrscr();
+			lcd_home();
+			lcd_puts("Р”Р»СЏ Р°РєС‚РёРІР°С†РёРё\nРїСЂРёР»РѕР¶Рё РєР»СЋС‡"); // Trans: 'To activate \n attach key'
+			//lcd_gotoxy(0, 1);
+			//lcd_puts("РїСЂРёР»РѕР¶РёС‚Рµ РєР»СЋС‡");		// Trans: 'attach key'
+			while ((cr_received==false)&&(tm_event == no_tm_event)){};
+			if (cr_received)
+			{	
+				parsing_command();
+			}	
+			switch(tm_event)
+			{//[switch]
+				case no_tm_event: 
+				{
 
-				}	
-		switch(tm_event)
-				{//[switch]
-					case no_tm_event: 
-					{
-
-					}
-					break;
+				}
+				break;
 					
-					case tm_crc_error: 
+				case tm_crc_error: 
+				{
+					lcd_clrscr();
+					lcd_home();
+					lcd_puts("РћС€РёР±РєР° CRC"); // Trans: 'CRC Error'
+					timer2 = 0;
+					while (timer2 < 6000){};
+					tm_event=no_tm_event;
+				}
+				break;
+
+				case tm_crc_ok: 
+				{
+					
+					if (tm_verification()) 	
 					{
+						tm_valide=1;				
 						lcd_clrscr();
 						lcd_home();
-						lcd_puts("Ошибка CRC");
+						lcd_puts("РЈРґР°С‡Рё!");	// Trans: 'Good Luck!'
 						timer2 = 0;
 						while (timer2 < 6000){};
 						tm_event=no_tm_event;
+						break;
 					}
-					break;
+					lcd_clrscr();
+					lcd_home();
+					lcd_puts("РќРµ С‚РѕС‚ РєР»СЋС‡");	// Trans: 'Not the key' (FIXME: not 'valid' key ?)
+					timer2 = 0;
+					while (timer2 < 6000){};
+					tm_event=no_tm_event;
 
-					case tm_crc_ok: 
-					{
-					
-						if (tm_verification()) 	
-						{
-							tm_valide=1;				
-							lcd_clrscr();
-							lcd_home();
-							lcd_puts("Удачи!");
-							timer2 = 0;
-							while (timer2 < 6000){};
-							tm_event=no_tm_event;
-							break;
-						}
-						lcd_clrscr();
-						lcd_home();
-						lcd_puts("Не тот ключ");
-						timer2 = 0;
-						while (timer2 < 6000){};
-						tm_event=no_tm_event;
+				}
 
-					}
-
-					break;
+				break;
 				
-				}//[/switch]
-			}//[while]
+			}//[/switch]
+		}//[/while]
 		lcd_clrscr();
 		lcd_home();
 		joystick_event=no_pressing;
 		keyboard_event=no_key_pressing;
 		tm_event=no_tm_event;
-lcd_puts("Для настроек\nприложи ключ  5");
-//lcd_puts("Вправо");
-while ((countdown > 0)&&(tm_event == no_tm_event)&&(joystick_event==no_pressing))//пока не кончиться обратный отсчёт или не нажмун кнопку джойстика
-	{
-		timer2 = 0;
-		while ((timer2 < 6000)&&(joystick_event==no_pressing)){};
-		if (joystick_event!=no_pressing) break; //если нажата кнопка, выходим из цикла 
-		lcd_gotoxy(14, 1);
-		countdown--;
-		lcd_puts(int_to_str(countdown,0));
-	}
+		lcd_puts("Р”Р»СЏ РЅР°СЃС‚СЂРѕРµРє\nРїСЂРёР»РѕР¶Рё РєР»СЋС‡  5");	// Trans: 'For settings, press key 5' (use keyboard .. or center key?)
+		//lcd_puts("Р’РїСЂР°РІРѕ");				// Trans: 'Right'
+		while ((countdown > 0)&&(tm_event == no_tm_event)&&(joystick_event==no_pressing))//Until the end of the countdown or if joystick moved
+		{
+			timer2 = 0;
+			while ((timer2 < 6000)&&(joystick_event==no_pressing)){};
+			if (joystick_event!=no_pressing) break; //if joystick moved, exit the loop
+			lcd_gotoxy(14, 1);
+			countdown--;
+			lcd_puts(int_to_str(countdown,0));
+		}
 
 
-switch(tm_event)
-				{//[switch]
-					case no_tm_event: 
-					{
+		switch(tm_event)
+		{//[switch]
+			case no_tm_event: 
+			{
 
-					}
-					break;
+			}
+			break;
 					
-					case tm_crc_error: 
-					{
-						lcd_clrscr();
-						lcd_home();
-						lcd_puts("Ошибка CRC");
-						timer2 = 0;
-						while (timer2 < 6000){};
-						lcd_clrscr();
-						lcd_home();
-						lcd_puts("Для настроек");
-						lcd_gotoxy(0, 1);
-						lcd_puts("приложи ключ");
-						tm_event=no_tm_event;
-					}
-					break;
+			case tm_crc_error: 
+			{
+				lcd_clrscr();
+				lcd_home();
+				lcd_puts("РћС€РёР±РєР° CRC");		// Trans: 'CRC Error'
+				timer2 = 0;
+				while (timer2 < 6000){};
+				lcd_clrscr();
+				lcd_home();
+				lcd_puts("Р”Р»СЏ РЅР°СЃС‚СЂРѕРµРє");	// Trans: 'In the settings'
+				lcd_gotoxy(0, 1);
+				lcd_puts("РїСЂРёР»РѕР¶Рё РєР»СЋС‡");	// Trans: 'Apply your key'
+				tm_event=no_tm_event;
+			}
+			break;
 
-					case tm_crc_ok: 
-					{
+			case tm_crc_ok: 
+			{
 					
-						if (tm_verification()) 	//ключ верный
-						{
-							get_all_setings();
-							tm_event=no_tm_event;
-							break;
-						}
-						//чужой ключ
-						lcd_clrscr();
-						lcd_home();
-						lcd_puts("Не тот ключ");
-						timer2 = 0;
-						while (timer2 < 6000){};
-						lcd_clrscr();
-						lcd_home();
-						lcd_puts("Для настроек");
-						lcd_gotoxy(0, 1);
-						lcd_puts("приложи ключ");
-						tm_event=no_tm_event;
+				if (tm_verification()) 	// Key is correct
+				{
+					get_all_setings();
+					tm_event=no_tm_event;
+					break;
+				}
+				//Foreign key (FIXME: 'strange' key ?)
+				lcd_clrscr();
+				lcd_home();
+				lcd_puts("РќРµ С‚РѕС‚ РєР»СЋС‡"); 	// Trans: 'Not the key' (FIXME: not 'valid' key ?)
+				timer2 = 0;
+				while (timer2 < 6000){};
+				lcd_clrscr();
+				lcd_home();
+				lcd_puts("Р”Р»СЏ РЅР°СЃС‚СЂРѕРµРє");	// Trans: 'In the settings'
+				lcd_gotoxy(0, 1);
+				lcd_puts("РїСЂРёР»РѕР¶Рё РєР»СЋС‡");	// Trans: 'Apply your key'
+				tm_event=no_tm_event;
 
 					
-					}
+			}
 
-					break;
+			break;
 				
-				}//[/switch]
+		}//[/switch]
 
 /*
-if (joystick_event==key_central_pressing) 
-	{
+		if (joystick_event==key_central_pressing) 
+		{
 		
-		get_int_settings("Идент. игрока:", &eeprom_player_id, 127); //нажата центральная кнопка
-		get_int_settings("Идент. команды:", &eeprom_team_id, 3); //нажата центральная кнопка
-		get_enum_settings("Наносимый урон:", &eeprom_damage, &damage_value, Damage_100);
-		get_int_settings("Емкость магазина:", &eeprom_bullets_in_clip, 90); //нажата центральная кнопка 
-		get_int_settings("Магазинов:", &eeprom_clips, 90);
-		get_int_settings("Время перезаряда:", &eeprom_reload_duration, 8);
-	//	return;
-	}
+				get_int_settings("РРґРµРЅС‚. РёРіСЂРѕРєР°:", &eeprom_player_id, 127); // Pressed center button
+				get_int_settings("РРґРµРЅС‚. РєРѕРјР°РЅРґС‹:", &eeprom_team_id, 3); // pressed center button
+				get_enum_settings("РќР°РЅРѕСЃРёРјС‹Р№ СѓСЂРѕРЅ:", &eeprom_damage, &damage_value, Damage_100);
+				get_int_settings("Р•РјРєРѕСЃС‚СЊ РјР°РіР°Р·РёРЅР°:", &eeprom_bullets_in_clip, 90); //Pressed center button
+				get_int_settings("РњР°РіР°Р·РёРЅРѕРІ:", &eeprom_clips, 90);
+				get_int_settings("Р’СЂРµРјСЏ РїРµСЂРµР·Р°СЂСЏРґР°:", &eeprom_reload_duration, 8);
+			//	return;
+		}
 
 */
 
 
-//	bullets = eeprom_read_byte(&eeprom_bullets_in_clip);
-//	BULLETS_OUT_LED_OFF;
+//		bullets = eeprom_read_byte(&eeprom_bullets_in_clip);
+//		BULLETS_OUT_LED_OFF;
 
-	bullets = 0;
-	BULLETS_OUT_LED_ON;
-
-
-	clips = eeprom_read_byte(&eeprom_clips);
-	joystick_event=no_pressing;
-	keyboard_event=no_key_pressing;
-	}
+		bullets = 0;
+		BULLETS_OUT_LED_ON;
 
 
-
-
-
+		clips = eeprom_read_byte(&eeprom_clips);
+		joystick_event=no_pressing;
+		keyboard_event=no_key_pressing;
+	}//[/if]
 
 }
 
@@ -1671,7 +1616,6 @@ char* int_to_str(uint8_t x, uint8_t digits){
 //const char numbers[10]="0123456789";
 
 static volatile char str[6];
-
 
 
 volatile uint8_t celoe, ostatok;
@@ -1757,7 +1701,7 @@ if (digits == 0)
 
 
 
-volatile void get_int_settings(char* text, uint8_t* var_adress, uint8_t max_value){//Получаем значения настроек с помощью джойстика и ЖКИ
+volatile void get_int_settings(char* text, uint8_t* var_adress, uint8_t max_value){//Get the value of options using the joystick and LCD
 uint8_t result;
 joystick_event=no_pressing;
 result = eeprom_read_byte(var_adress);
@@ -1767,7 +1711,7 @@ lcd_clrscr();
 lcd_puts(text);
 lcd_gotoxy(0, 1);
 lcd_puts(int_to_str(result,3));
-lcd_puts(" центр.кн.-OK");
+lcd_puts(" С†РµРЅС‚СЂ.РєРЅ.-OK");
 
 while  (joystick_event!=key_central_pressing)
 {
@@ -1792,8 +1736,8 @@ while  (joystick_event!=key_central_pressing)
 			if ((result)<max_value) result++;
 			lcd_gotoxy(0, 1);
 			lcd_puts(int_to_str(result,3));
-			//lcd_puts("Нажата кнопка \n");
-			//lcd_puts("Вправо");
+			//lcd_puts("РќР°Р¶Р°С‚Р° РєРЅРѕРїРєР° \n");
+			//lcd_puts("Р’РїСЂР°РІРѕ");
 			joystick_event = no_pressing;
 		}
 		break;
@@ -1812,8 +1756,8 @@ while  (joystick_event!=key_central_pressing)
 			//lcd_clrscr();
 			//lcd_gotoxy(0, 0);
 			if ((result)>0) result--;
-			//lcd_puts("Нажата кнопка \n");
-			//lcd_puts("Влево");
+			//lcd_puts("РќР°Р¶Р°С‚Р° РєРЅРѕРїРєР° \n");
+			//lcd_puts("Р’Р»РµРІРѕ");
 			lcd_gotoxy(0, 1);
 			lcd_puts(int_to_str(result,3));
 			joystick_event = no_pressing;
@@ -1835,7 +1779,7 @@ if (result != eeprom_read_byte(var_adress))
 	{
 	
 	lcd_clrscr();
-	lcd_puts("Сохранение...");
+	lcd_puts("РЎРѕС…СЂР°РЅРµРЅРёРµ..."); // Trans: 'Saving...'
 	eeprom_write_byte(var_adress, result);	
 	}
 }
@@ -1856,7 +1800,7 @@ lcd_clrscr();
 lcd_puts(text);
 lcd_gotoxy(0, 1);
 lcd_puts(int_to_str(value,3));
-lcd_puts(" центр.кн.-OK");
+lcd_puts(" С†РµРЅС‚СЂ.РєРЅ.-OK"); // Trans: 'tsentr.kn-OK' (Center key - OK)
 
 while  (joystick_event!=key_central_pressing)
 {
@@ -1881,8 +1825,8 @@ while  (joystick_event!=key_central_pressing)
 			if ((result)<max_value) result++;
 			lcd_gotoxy(0, 1);
 			lcd_puts(int_to_str(pgm_read_byte(arr_adress+result),3));
-			//lcd_puts("Нажата кнопка \n");
-			//lcd_puts("Вправо");
+			//lcd_puts("РќР°Р¶Р°С‚Р° РєРЅРѕРїРєР° \n");  	// Trans: 'Key pressed \n';
+			//lcd_puts("Р’РїСЂР°РІРѕ");				// Trans: 'Right';
 			joystick_event = no_pressing;
 		}
 		break;
@@ -1901,8 +1845,8 @@ while  (joystick_event!=key_central_pressing)
 			//lcd_clrscr();
 			//lcd_gotoxy(0, 0);
 			if ((result)>0) result--;
-			//lcd_puts("Нажата кнопка \n");
-			//lcd_puts("Влево");
+			//lcd_puts("РќР°Р¶Р°С‚Р° РєРЅРѕРїРєР° \n");		// Trans: 'Key pressed \n';
+			//lcd_puts("Р’Р»РµРІРѕ");				// Trans: 'Left'
 			lcd_gotoxy(0, 1);
 			lcd_puts(int_to_str(pgm_read_byte(arr_adress+result),3));
 			joystick_event = no_pressing;
@@ -1923,7 +1867,7 @@ if (result != eeprom_read_byte(var_adress))
 	{
 	
 	lcd_clrscr();
-	lcd_puts("Сохранение...");
+	lcd_puts("РЎРѕС…СЂР°РЅРµРЅРёРµ...");					// Trans: 'Saving...'
 	eeprom_write_byte(var_adress, result);	
 	}
 
@@ -1949,17 +1893,17 @@ if (eeprom_read_byte(&friendly_fire_enable)>1) eeprom_write_byte(&friendly_fire_
 
 
 
-void display_status()//выводим на дисплей текущее значение жизни, патронов, магазинов 
+void display_status()//Display the current value of life, ammunition and clips
 {
 	lcd_clrscr();
-	lcd_puts("жизнь: ");
+	lcd_puts("Р¶РёР·РЅСЊ: ");						// Trans: 'Life' (health)
 	lcd_puts(int_to_str(life_in_percent,0));
 	lcd_puts("% ");
 	lcd_gotoxy(0, 1);
-	lcd_puts("патр: ");
+	lcd_puts("РїР°С‚СЂ: ");							// Trans: 'Patriarch' (seems to refer to bullets)
 	lcd_puts(int_to_str(bullets,0));
 	lcd_gotoxy(10, 1);
-	lcd_puts("м: ");
+	lcd_puts("Рј: ");							// Trans: 'm' (clips ?)
 	lcd_puts(int_to_str(clips,0));
 	lcd_puts(" ");
 
@@ -1968,7 +1912,7 @@ void display_status()//выводим на дисплей текущее значение жизни, патронов, мага
 }
 
 
-void display_life_update(){//обновляем значение жизни на дисплее
+void display_life_update(){//update the value of life on display
 lcd_gotoxy(7, 0);
 lcd_puts(int_to_str(life_in_percent,0));
 lcd_puts("%   ");
@@ -1976,29 +1920,29 @@ lcd_puts("%   ");
 
 
 
-void display_bullets_update(){//обновляем значение жизни на дисплее
+void display_bullets_update(){//update the amount of bullets left on display
 lcd_gotoxy(6, 1);
 lcd_puts(int_to_str(bullets,0));
 lcd_puts(" ");
 }
 
-void display_clips_update(){//обновляем значение жизни на дисплее
+void display_clips_update(){//update the amount of clips left on display
 lcd_gotoxy(13, 1);
 lcd_puts(int_to_str(clips,0));
 lcd_puts(" ");
 }
 
 
-void display_voltage_update(){//обновляем значение жизни на дисплее
+void display_voltage_update(){//Update battery-level on display
 
 volatile uint16_t adc_data;
 //volatile uint16_t batt_voltage;
 adc_data=ReadADC(ADC_CHANNEL);
 
 
-uint16_t delta; //разница между значениями АЦП при полностью заряженной и полностью разряженной батареи
-uint8_t curr_batt_level; //текузий уровеь состояния батареи (1 из 6 возможных)
-uint16_t full_level, low_level;//значения полностью заряженной и полностью разряженной батареи в значениях АЦП
+uint16_t delta; //The difference, expressed in ADC-values, between fully charged and fully discharged batteries
+uint8_t curr_batt_level; //	tekuzy urove battery status (1 out of 6 possible) FIXME: error in translation
+uint16_t full_level, low_level;//ADC value of fully charged and fully discharged battery-voltages
 full_level = (eeprom_read_word(&eeprom_batt_full_voltage)*4)/75;
 low_level = (eeprom_read_word(&eeprom_batt_low_voltage)*4)/75;
 
@@ -2067,8 +2011,8 @@ lcd_puts(" ");
 void init_adc(void)
 {
 
-ADMUX=((1<<REFS0)|(1<<REFS1));//выбираем внутренний источник опорного напряжения
-ADCSRA=(1<<ADEN)|(1<<ADPS2)|(1<<ADPS1)|(1<<ADPS0); //Rrescalar div factor =128
+ADMUX=((1<<REFS0)|(1<<REFS1));//Select the internal voltage reference
+ADCSRA=(1<<ADEN)|(1<<ADPS2)|(1<<ADPS1)|(1<<ADPS0); //Prescaler div factor =128
 
 
 }
@@ -2098,20 +2042,20 @@ uint16_t ReadADC(uint8_t ch)
 
 
 /********************************************
-*покажем кто в нас попал и какой урон нанёс
+*Show who hit us and what damage was inflicted
 ********************************************/
 
 void display_hit_data(void)
 {
 lcd_clrscr();
 lcd_home();
-lcd_puts("Урон ");
+lcd_puts("РЈСЂРѕРЅ ");							// Trans: Damage
 lcd_puts(int_to_str(rx_packet.damage,0));
-lcd_puts("% нанес");
+lcd_puts("% РЅР°РЅРµСЃ");						// Trans: '% paid' (done ?)
 lcd_gotoxy(0, 1);
-lcd_puts("иг. ");
+lcd_puts("РёРі. ");							// Trans: u. (player ID ?)
 lcd_puts(int_to_str(rx_packet.player_id,0));
-lcd_puts(" ком. ");
+lcd_puts(" РєРѕРј. ");							// Trans: com (team id ?)
 lcd_puts(int_to_str(rx_packet.team_id,0));
 }
 
@@ -2126,12 +2070,12 @@ uint8_t value;
 joystick_event=no_pressing;
 result = eeprom_read_byte(&eeprom_curr_ir_pin);
 lcd_clrscr();
-lcd_puts("Мощность ИК для");
+lcd_puts("РњРѕС‰РЅРѕСЃС‚СЊ РРљ РґР»СЏ");				//Trans: Power to the IR (led)
 lcd_gotoxy(0, 1);
-if (result==IR_LED_HIGH_POWER_PIN) lcd_puts("улицы");
-if (result==IR_LED_LOW_POWER_PIN) lcd_puts("помещ");
+if (result==IR_LED_HIGH_POWER_PIN) lcd_puts("СѓР»РёС†С‹");	// Trans: 'Street' (Outdoor)
+if (result==IR_LED_LOW_POWER_PIN) lcd_puts("РїРѕРјРµС‰");	// Trans: 'ind'		(indoor)
 
-lcd_puts(" цен.кн.-OK");
+lcd_puts(" С†РµРЅ.РєРЅ.-OK");								// Trans: tsen.kn-ok
 
 while  (joystick_event!=key_central_pressing)
 {
@@ -2159,7 +2103,7 @@ while  (joystick_event!=key_central_pressing)
 			{
 				result=IR_LED_HIGH_POWER_PIN;
 				lcd_gotoxy(0, 1);
-				lcd_puts("улицы");
+				lcd_puts("СѓР»РёС†С‹");				// Trans: 'street'
 			}
 			
 			joystick_event = no_pressing;
@@ -2184,7 +2128,7 @@ while  (joystick_event!=key_central_pressing)
 			{
 				result=IR_LED_LOW_POWER_PIN;
 				lcd_gotoxy(0, 1);
-				lcd_puts("помещ");
+				lcd_puts("РїРѕРјРµС‰");			// Trans: 'ind'
 			}
 			
 			joystick_event = no_pressing;
@@ -2205,7 +2149,7 @@ if (result != eeprom_read_byte(&eeprom_curr_ir_pin))
 	{
 	
 	lcd_clrscr();
-	lcd_puts("Сохранение...");
+	lcd_puts("РЎРѕС…СЂР°РЅРµРЅРёРµ...");			//Trans: 'Saving...'
 	eeprom_write_byte(&eeprom_curr_ir_pin, result);	
 	}
 
@@ -2215,19 +2159,19 @@ if (result != eeprom_read_byte(&eeprom_curr_ir_pin))
 
 
 
-void get_friendly_fire_settings(void)//включение/отключение "дружественного" огня
+void get_friendly_fire_settings(void)//Enable/disable detection of friendly-fire
 {
 uint8_t result;
 uint8_t value;
 joystick_event=no_pressing;
 result = eeprom_read_byte(&friendly_fire_enable);
 lcd_clrscr();
-lcd_puts("Дружеств. огонь:");
+lcd_puts("Р”СЂСѓР¶РµСЃС‚РІ. РѕРіРѕРЅСЊ:");		//Trans: 'Commonwealth. fire' 
 lcd_gotoxy(0, 1);
-if (result) lcd_puts("Да ");
-else lcd_puts("Нет");
+if (result) lcd_puts("Р”Р° ");		// Trans: 'Yes'
+else lcd_puts("РќРµС‚");				// Trans: 'No'
 
-lcd_puts(" цен.кн.-OK");
+lcd_puts(" С†РµРЅ.РєРЅ.-OK");
 
 while  (joystick_event!=key_central_pressing)
 {
@@ -2255,7 +2199,7 @@ while  (joystick_event!=key_central_pressing)
 			{
 				result=true;
 				lcd_gotoxy(0, 1);
-				lcd_puts("Да ");
+				lcd_puts("Р”Р° ");			//Trans 'Yes'
 			}
 			
 			joystick_event = no_pressing;
@@ -2280,7 +2224,7 @@ while  (joystick_event!=key_central_pressing)
 			{
 				result=false;
 				lcd_gotoxy(0, 1);
-				lcd_puts("Нет");
+				lcd_puts("РќРµС‚");		// Trans: 'No'
 			}
 			
 			joystick_event = no_pressing;
@@ -2301,7 +2245,7 @@ if (result != eeprom_read_byte(&friendly_fire_enable))
 	{
 	
 	lcd_clrscr();
-	lcd_puts("Сохранение...");
+	lcd_puts("РЎРѕС…СЂР°РЅРµРЅРёРµ...");					// Trans: 'Saving...'
 	eeprom_write_byte(&friendly_fire_enable, result);	
 	}
 
@@ -2314,15 +2258,15 @@ if (result != eeprom_read_byte(&friendly_fire_enable))
 
 void get_all_setings(void)
 {
-	get_int_settings("Идент. игрока:", &eeprom_player_id, 127); //нажата центральная кнопка
-	set_player_id(eeprom_read_byte(&eeprom_player_id));	//Устанавливаем идентификатор игрока
-	get_int_settings("Идент. команды:", &eeprom_team_id, 3); //нажата центральная кнопка
-	set_team_color(team_id());	//Устанавливаем идентификатор (цвет) команды
-	get_enum_settings("Наносимый урон:", &eeprom_damage, &damage_value, Damage_100);
-	set_gun_damage(gun_damage());		//Устанавливаем мощьность оружия (урон)
-	get_int_settings("Емкость магазина:", &eeprom_bullets_in_clip, 90); //нажата центральная кнопка 
-	get_int_settings("Магазинов:", &eeprom_clips, 90);
-	get_int_settings("Время перезаряда:", &eeprom_reload_duration, 8);
+	get_int_settings("РРґРµРЅС‚. РёРіСЂРѕРєР°:", &eeprom_player_id, 127); //Pressed the center button
+	set_player_id(eeprom_read_byte(&eeprom_player_id));	//Set the ID of the player
+	get_int_settings("РРґРµРЅС‚. РєРѕРјР°РЅРґС‹:", &eeprom_team_id, 3); //Pressed the center button
+	set_team_color(team_id());	//Set team id (color)
+	get_enum_settings("РќР°РЅРѕСЃРёРјС‹Р№ СѓСЂРѕРЅ:", &eeprom_damage, &damage_value, Damage_100);
+	set_gun_damage(gun_damage());		//Set bullet damage-level (Done)
+	get_int_settings("Р•РјРєРѕСЃС‚СЊ РјР°РіР°Р·РёРЅР°:", &eeprom_bullets_in_clip, 90); //Pressed the center button
+	get_int_settings("РњР°РіР°Р·РёРЅРѕРІ:", &eeprom_clips, 90);
+	get_int_settings("Р’СЂРµРјСЏ РїРµСЂРµР·Р°СЂСЏРґР°:", &eeprom_reload_duration, 8);
 	get_ir_power_settings();
 	curr_ir_pin=eeprom_read_byte(&eeprom_curr_ir_pin);
 	get_friendly_fire_settings();
@@ -2331,7 +2275,7 @@ void get_all_setings(void)
 
 
 
-uint8_t get_command_index(void)//проверим, что за команда пришла по UART
+uint8_t get_command_index(void)//Check for a command that came from the UART
 {
 volatile uint16_t delta;
 volatile char* cursor_pos;
@@ -2348,7 +2292,7 @@ uint8_t comand_len;
 		
 		unsigned char sym;
 		uint8_t sym_index = 0;
-		char* psym; //указатель на первый символ команды в памяти программ
+		char* psym; //pointer to the first character of the command in PROGMEM
 //		char* pos;
 //		char* pos_buff;
 		psym = (char*)(pgm_read_word(&(commandsPointers[index])));
@@ -2356,7 +2300,7 @@ uint8_t comand_len;
 		while((pgm_read_byte(psym)!=0))
 		{
 			sym = pgm_read_byte(psym);
-			cmd_buff[sym_index++] = sym; //копируем команду в буфер
+			cmd_buff[sym_index++] = sym; //copy command to clipboard
 			comand_len++;
 			psym++;
 		}
@@ -2380,7 +2324,7 @@ uint8_t comand_len;
 	
 	}
 
-	return 255; //не найдена такая команда в списке команд
+	return 255; //No such command found in the command-list
 }
 
 
@@ -2400,7 +2344,7 @@ while(usartRxBuf[rxBufHead] !='\r')
 	{
 
 		ch_tmp = usartRxBuf[rxBufHead++];
-		if (ch_tmp==' ') continue; //игнорируем пробелы
+		if (ch_tmp==' ') continue; //ignore whitespace
 		if ((ch_tmp >= '0')&&(ch_tmp<= '9'))
 		{
 			result = result*10+char_to_int(ch_tmp);
@@ -2412,20 +2356,19 @@ while(usartRxBuf[rxBufHead] !='\r')
 			return;
 			
 			//USART_SendStr("ERROR\n\r");
-			//return invalid;//недопустимый аргумент
-
+			//return invalid;//Invalid argument
 		}
 	}
 if (!param_not_empty) 
 	{
 		USART_SendStrP(parameter_empty_error);
-		return;//пустой аргумент
+		return;//Empty argument
 	}
 
 if ((result>max_val)||(result<min_val))
 	{
 		USART_SendStrP(parameter_out_of_range_error);
-		return;//аргумент больше максимально допустимого значения
+		return;//Argument out of bounds of permitted values
 	} 
 
 eeprom_write_byte(var_adress, result);	
@@ -2447,7 +2390,7 @@ while(usartRxBuf[rxBufHead] !='\r')
 	{
 
 		ch_tmp = usartRxBuf[rxBufHead++];
-		if (ch_tmp==' ') continue; //игнорируем пробелы
+		if (ch_tmp==' ') continue; //ignore whitespace
 		if ((ch_tmp >= '0')&&(ch_tmp<= '9'))
 		{
 			result = result*10+char_to_int(ch_tmp);
@@ -2459,20 +2402,20 @@ while(usartRxBuf[rxBufHead] !='\r')
 			return;
 			
 			//USART_SendStr("ERROR\n\r");
-			//return invalid;//недопустимый аргумент
+			//return invalid;//invalid argument
 
 		}
 	}
 if (!param_not_empty) 
 	{
 		USART_SendStrP(parameter_empty_error);
-		return;//пустой аргумент
+		return;//empty argument
 	}
 
 if ((result>max_val)||(result<min_val))
 	{
 		USART_SendStrP(parameter_out_of_range_error);
-		return;//аргумент больше максимально допустимого значения
+		return;//argument out of bounds of permitted values
 	} 
 
 eeprom_write_word(var_adress, result);	
@@ -2497,7 +2440,7 @@ while(usartRxBuf[rxBufHead] !='\r')
 	{
 
 		ch_tmp = usartRxBuf[rxBufHead++];
-		if (ch_tmp==' ') continue; //игнорируем пробелы
+		if (ch_tmp==' ') continue; //ignore whitespace
 		if ((ch_tmp >= '0')&&(ch_tmp<= '9'))
 		{
 			result = result*10+char_to_int(ch_tmp);
@@ -2569,7 +2512,7 @@ while(usartRxBuf[rxBufHead] !='\r')
 	{
 
 		ch_tmp = usartRxBuf[rxBufHead++];
-		if (ch_tmp==' ') continue; //игнорируем пробелы
+		if (ch_tmp==' ') continue; //ignore whitespace
 		if ((ch_tmp >= '0')&&(ch_tmp<= '9'))
 		{
 			result = result*10+char_to_int(ch_tmp);
@@ -2608,7 +2551,7 @@ while(usartRxBuf[rxBufHead] !='\r')
 	{
 
 		ch_tmp = usartRxBuf[rxBufHead++];
-		if (ch_tmp==' ') continue; //игнорируем пробелы
+		if (ch_tmp==' ') continue; //ignore whitespace
 		if ((ch_tmp >= '0')&&(ch_tmp<= '9'))
 		{
 			result = result*10+char_to_int(ch_tmp);
@@ -2637,7 +2580,7 @@ USART_FlushRxBuf();
 USART_SendStr("OK\r\n");
 
 uart_timer = 0;
-while ((uart_timer < 650)&&(rxCount<128)); //ждем приема 128 байт
+while ((uart_timer < 650)&&(rxCount<128)); //read until 128 bytes have been received
 if (rxCount>=128)
 	{
 		if(eeWriteBytes(&usartRxBuf[0], result*128, 128)) 
@@ -2670,7 +2613,7 @@ while(usartRxBuf[rxBufHead] !='\r')
 	{
 
 		ch_tmp = usartRxBuf[rxBufHead++];
-		if (ch_tmp==' ') continue; //игнорируем пробелы
+		if (ch_tmp==' ') continue; //Ignore whitespace
 		if ((ch_tmp >= '0')&&(ch_tmp<= '9'))
 		{
 			result = result*10+char_to_int(ch_tmp);
@@ -2710,7 +2653,7 @@ USART_FlushTxBuf();
 				if(((UCSRA & (1<<UDRE)) != 0)) 
   				{
   					UDR = usartTxBuf[0];
-					while (txCount); //пока все не отправим
+					while (txCount); //until all bytes are sent.
 					USART_SendStr("OK\r\n");
   				}
   				else
@@ -2759,7 +2702,7 @@ while(usartRxBuf[rxBufHead] !='\r')
 	{
 
 		ch_tmp = usartRxBuf[rxBufHead++];
-		if (ch_tmp==' ') continue; //игнорируем пробелы
+		if (ch_tmp==' ') continue; //Ignore whitespace
 		if ((ch_tmp >= '0')&&(ch_tmp<= '9'))
 		{
 			result = result*10+char_to_int(ch_tmp);
@@ -2905,7 +2848,7 @@ while(usartRxBuf[rxBufHead] !='\r')
 	{
 
 		ch_tmp = usartRxBuf[rxBufHead++];
-		if (ch_tmp==' ') continue; //игнорируем пробелы
+		if (ch_tmp==' ') continue; //Ignore whitespace
 		if ((ch_tmp >= '0')&&(ch_tmp<= '9'))
 		{
 			result = result*10+char_to_int(ch_tmp);
@@ -3020,7 +2963,7 @@ while(usartRxBuf[rxBufHead] !='\r')
 	{
 
 		ch_tmp = usartRxBuf[rxBufHead++];
-		if (ch_tmp==' ') continue; //игнорируем пробелы
+		if (ch_tmp==' ') continue; //Ignore whitespace
 		if ((ch_tmp >= '0')&&(ch_tmp<= '9'))
 		{
 			result = result*10+char_to_int(ch_tmp);
@@ -3032,20 +2975,20 @@ while(usartRxBuf[rxBufHead] !='\r')
 			return;
 			
 			//USART_SendStr("ERROR\n\r");
-			//return invalid;//недопустимый аргумент
+			//return invalid;//Invalid argument
 
 		}
 	}
 if (!param_not_empty) 
 	{
 		USART_SendStrP(parameter_empty_error);
-		return;//пустой аргумент
+		return;//Empty argument
 	}
 
 if ((result>1)||(result<0))
 	{
 		USART_SendStrP(parameter_out_of_range_error);
-		return;//аргумент больше максимально допустимого значения
+		return;//argument out of bounds of permitted values
 	} 
 
 switch (result)
@@ -3237,14 +3180,14 @@ uint8_t cmd_index;
 
 
 
-bool play_sound_from_eeprom(uint16_t address, uint16_t data_size) //воспроизводим звук непосредственно из eeprom
+bool play_sound_from_eeprom(uint16_t address, uint16_t data_size) //plays sound directly from EEPROM
 
 { 
 
-//	    uint8_t data; //Переменная, в которую запишем прочитанный байт
+//	    uint8_t data; //Variable to which we write the first byte
 	 
-	//Точно такой же кусок кода, как и в eeWriteByte...
-	/*****УСТАНАВЛИВАЕМ СВЯЗЬ С ВЕДОМЫМ********/
+	//The same piece of code as  eeWriteByte...
+	/*****Establishes a link with the EEPROM********/
 	    do
 	    {
 	        TWCR=(1<<TWINT)|(1<<TWSTA)|(1<<TWEN);
@@ -3260,7 +3203,7 @@ bool play_sound_from_eeprom(uint16_t address, uint16_t data_size) //воспроизводи
 	 
 	    }while((TWSR & 0xF8) != TW_MT_SLA_ACK);
 	 
-	/*****ПЕРЕДАЕМ АДРЕС ЧТЕНИЯ********/
+	/*****pass the address to READ from********/
 	    TWDR=(address>>8);
 	    TWCR=(1<<TWINT)|(1<<TWEN);
 	    while(!(TWCR & (1<<TWINT)));
@@ -3275,117 +3218,117 @@ bool play_sound_from_eeprom(uint16_t address, uint16_t data_size) //воспроизводи
 	    if((TWSR & 0xF8) != TW_MT_DATA_ACK)
 	        return false;
 	 
-	/*****ПЕРЕХОД В РЕЖИМ ЧТЕНИЯ********/
-	/*Необходимо опять «связаться» с ведомым, т.к. ранее мы отсылали адресный пакет (slaveAddressConst<<4) + (slaveAddressVar<<1) + WRITEFLAG, чтобы записать адрес чтения байта данных. А теперь нужно перейти в режим чтения (мы же хотим прочитать байт данных), для этого отсылаем новый пакет (slaveAddressConst<<4) + (slaveAddressVar<<1) + READFLAG.*/
+	/*****Switch to READ mode********/
+	/*This is required to 'contact' the slave. First we sent out the chip address (slaveAddressConst << 4) + (slaveAddressVar << 1) + WRITEFLAG to tell the chip which address we want to read a data-byte from. Now we switch to read (because we want to read that byte). This by writing '(slaveAddressConst << 4) + (slaveAddressVar << 1) + READFLAG to the bus*/
 	 
-	    //Повтор условия начала передачи
+	    //We again initialize the bus with a 'repeated start condition'
 	    TWCR=(1<<TWINT)|(1<<TWSTA)|(1<<TWEN);
-	//ждем выполнения текущей операции
+	//... and wait for the operation to finish
 	    while(!(TWCR & (1<<TWINT)));
 	 
-	/*Проверяем статус. Условие повтора начала передачи (0x10=TW_REP_START) должно подтвердиться*/
+	/*We check the bus status; the 'repeated start condition' should be detected. (0x10 = TW_REP_START) */
 	    if((TWSR & 0xF8) != TW_REP_START)
 	        return false;
 	 
-	    /*Записываем адрес ведомого (7 битов) и в конце бит чтения (1)*/
-	    //TWDR=0b1010’000’1;
+	    /*Write the address (7bits) and the end-bit (1bit)*/
+	    //TWDR=0b1010вЂ™000вЂ™1;
 	    TWDR = (slaveAddressConst<<4) + (slaveAddressVar<<1) + READFLAG;        
 	 
-	//Отправляем..
+	//Send...
 	    TWCR=(1<<TWINT)|(1<<TWEN);
 	    while(!(TWCR & (1<<TWINT)));
 	 
-	/*Проверяем, нашелся ли ведомый с адресом 1010’000 и готов ли он работать на чтение*/
+	/*Check to see if a device was detected at address 0b1010'000 and if it's ready to read from*/
 	    if((TWSR & 0xF8) != TW_MR_SLA_ACK)
 	        return false;
 	 
-	/*****СЧИТЫВАЕМ БАЙТ ДАННЫХ********/
-	 for(uint16_t i=0; i < (data_size - 1); i++)//считаем все байты, кроме последнего
+	/*****Reads a byte of data********/
+	 for(uint16_t i=0; i < (data_size - 1); i++)//find all bytes, except for the last
 	{
 
-	/*Начинаем прием данных с помощью очистки флага прерывания TWINT. Читаемый байт записывается в регистр TWDR.*/
+	/*Start data-reception by clearing the interrupt flag TWINT. TWDR will contain the byte that is read*/
 	    TWCR=(1<<TWINT)|(1<<TWEN)|(1<<TWEA);
 	 
-	    //Ждем окончания приема..
+	    //Wait for reception to finish...
 	    while(!(TWCR & (1<<TWINT)));
 	 
-	/*Проверяем статус. По протоколу, прием данных должен оканчиваться без подтверждения со стороны ведущего (TW_MR_DATA_NACK = 0x58)*/
+	/*We check the bus status; according to specs, the status-register (TWSR) should indicate a NACK from the master (TW_MR_DATA_NACK = 0x58)*/
 	    if((TWSR & 0xF8) != TW_MR_DATA_ACK)
 	        return false;
 	 
-	    /*Присваиваем переменной data значение, считанное в регистр данных TWDR*/
-	    while (fcurr_simple_prepared); //ждем, когда прерывание воспроизведет сеймл
-		curr_simple = TWDR; //скармливаем прерыванию очередной сеймпл
-		fcurr_simple_prepared = true;//сообщаем прерыванию, что очередной сейпл готов
+	    /*Take the byte out of the i2c data-register (TWDR) and stick it into a variable.*/
+	    while (fcurr_simple_prepared); //Wait for the interrupt to have set the flag
+		curr_simple = TWDR; //take the data out...
+		fcurr_simple_prepared = true;//and set flag to push the sample-byte out through the DAC
 //		*buffer = TWDR;
 //		buffer++;
 		//data=TWDR;
 	}
 
-	 /*Начинаем прием данных с помощью очистки флага прерывания TWINT. Читаемый байт записывается в регистр TWDR.*/
+	 /*Start data-reception by clearing interrupt flag TWINT. Received byte is written to TWDR*/
 	    TWCR=(1<<TWINT)|(1<<TWEN);
 	 
-	    //Ждем окончания приема..
+	    //Wait for reception to finish...
 	    while(!(TWCR & (1<<TWINT)));
 	 
-	/*Проверяем статус. По протоколу, прием данных должен оканчиваться без подтверждения со стороны ведущего (TW_MR_DATA_NACK = 0x58)*/
+	/* We check the bus status; according to specs, the status-register (TWSR) should indicate a NACK from the master (TW_MR_DATA_NACK = 0x58)*/
 	    if((TWSR & 0xF8) != TW_MR_DATA_NACK)
 	        return false;
 	 
-	    /*Присваиваем переменной data значение, считанное в регистр данных TWDR*/
+	    /* Take the byte out of the i2c data-register (TWDR) and stick it into a variable.*/
 	    
 
-		while (fcurr_simple_prepared); //ждем, когда прерывание воспроизведет сеймл
-		curr_simple = TWDR; //скармливаем прерыванию очередной сеймпл
-		fcurr_simple_prepared = true;//сообщаем прерыванию, что очередной сейпл готов
+		while (fcurr_simple_prepared); //Wait for the interrupt to have set the flag.
+		curr_simple = TWDR; //take the data out...
+		fcurr_simple_prepared = true;//and set flag to push the sample-byte out through the DAC
 //		*buffer = TWDR;
 
 
-	    /*Устанавливаем условие завершения передачи данных (СТОП)*/
+	    /*Set the STOP condition to indicate we're done reading data.*/
 	    TWCR=(1<<TWINT)|(1<<TWEN)|(1<<TWSTO);
 	 
-	    //Ждем установки условия СТОП
+	    //We wait for the control-register to have updated.
 	    while(TWCR & (1<<TWSTO));
 	 
-    //Возвращаем считанный байт
+    //Read the byte.
     OCR0 = 0;
 	curr_simple=0;
 	fcurr_simple_prepared=false;
 	return true;
 }
 
-void play_sound_1(){//воспроизводим звук 1
+void play_sound_1(){//reproduce sound number 1
 play_sound_from_eeprom(eeprom_read_word(&sound_1_adress),eeprom_read_word(&sound_1_size));
 }
-void play_sound_2(){//воспроизводим звук 2
+void play_sound_2(){//reproduce sound number 2
 play_sound_from_eeprom(eeprom_read_word(&sound_2_adress),eeprom_read_word(&sound_2_size));
 }
 
-void play_sound_3(){//воспроизводим звук 3
+void play_sound_3(){//reproduce sound number 3
 play_sound_from_eeprom(eeprom_read_word(&sound_3_adress),eeprom_read_word(&sound_3_size));
 }
-void play_sound_4(){//воспроизводим звук 4
+void play_sound_4(){//reproduce sound number 4
 play_sound_from_eeprom(eeprom_read_word(&sound_4_adress),eeprom_read_word(&sound_4_size));
 }
-void play_sound_5(){//воспроизводим звук 5
+void play_sound_5(){//reproduce sound number 5
 play_sound_from_eeprom(eeprom_read_word(&sound_5_adress),eeprom_read_word(&sound_5_size));
 }
 
-void play_sound_6(){//воспроизводим звук 6
+void play_sound_6(){//reproduce sound number 6
 play_sound_from_eeprom(eeprom_read_word(&sound_6_adress),eeprom_read_word(&sound_6_size));
 }
 
 /*
-void sound_buffer_update(){//подкинем в звуковой буфер новую партию сейплов
+void sound_buffer_update(){//Put new bytes into the sound-buffer
 switch (curr_sound_buffer)
 	{
-		case sound_buffer_1://сейчас сеймплы считываются с первого звукового буфера
+		case sound_buffer_1://sample-data read from the first buffer
 		{
 			eeReadBytes(&usartTxBuf[0],curr_adress_in_eeprom,256);
 
 		}
 		break;
-		case sound_buffer_2://сейчас сеймплы считываются со второго звукового буфера
+		case sound_buffer_2://sample-data read from the second buffer
 		{
 			eeReadBytes(&usartRxBuf[0],curr_adress_in_eeprom,256);
 
@@ -3394,7 +3337,7 @@ switch (curr_sound_buffer)
 	}
 
 curr_adress_in_eeprom =curr_adress_in_eeprom + 256; 
-update_suond_buffer_now = false;//событие обработали, сбросим флаг	
+update_suond_buffer_now = false;//Event has been handled; clear the flag	
 }
 */
 
@@ -3407,11 +3350,11 @@ curr_pos_in_sound_buff=0;
 curr_sound_buffer=sound_buffer_1;
 update_suond_buffer_now = false;
 curr_adress_in_eeprom = eeprom_read_word(&sound_1_adress);
-eeReadBytes(&usartRxBuf[0],curr_adress_in_eeprom,256);//заполняем буфер 1
+eeReadBytes(&usartRxBuf[0],curr_adress_in_eeprom,256);//Fill buffer 1
 curr_adress_in_eeprom = curr_adress_in_eeprom + 256; 
-eeReadBytes(&usartTxBuf[0],curr_adress_in_eeprom,256);//заполняем буфер 2
+eeReadBytes(&usartTxBuf[0],curr_adress_in_eeprom,256);//Fill buffer 2
 curr_adress_in_eeprom = curr_adress_in_eeprom + 256; 
-simples_in_queue = eeprom_read_word(&sound_1_size);//погнали :-)
+simples_in_queue = eeprom_read_word(&sound_1_size);//done :-)
 };
 
 */
