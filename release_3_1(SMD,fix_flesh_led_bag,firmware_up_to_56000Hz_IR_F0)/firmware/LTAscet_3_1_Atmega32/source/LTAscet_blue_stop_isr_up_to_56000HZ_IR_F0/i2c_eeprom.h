@@ -1,3 +1,9 @@
+/* Note: the code used in this file seems to have been taken from http://nagits.wordpress.com/2010/12/18/avr_i2c_eeprom/
+   It would be good to check copyright on this code.
+   No english translation seems to exist at present: presenting back the english version might be the least I can do
+   -- Arnd; 20130604
+*/
+
 #include <avr/io.h>        /* Imports the names for the inputs in PORTA	*/
 #include <util/delay.h>    /* Supplies delay-routines			*/
 #include <avr/interrupt.h> /* We will use the interrupt handling	*/
